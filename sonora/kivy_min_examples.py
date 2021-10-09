@@ -1,5 +1,4 @@
 from kivy.app import App
-from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.button import Button
 from kivy.uix.gridlayout import GridLayout
@@ -7,48 +6,10 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
 
+from sonora.buttons import GotoLoginScreenBtn, GotoCreateAccountBtn, BackStartScreenBtn
+
 from pprint import pprint
-# Create both screens. Please note the root.manager.current: this is how
-# you can control the ScreenManager from kv. Each screen has by default a
-# property manager that gives you the instance of the ScreenManager used.
-Builder.load_string("""
-<MenuScreen>:
-    BoxLayout:
-        Button:
-            text: 'Goto settings'
-            on_press: root.manager.current = 'settings'
-        Button:
-            text: 'Quit'
 
-<SettingsScreen>:
-    BoxLayout:
-        Button:
-            text: 'My settings button'
-        Button:
-            text: 'Back to menu'
-            on_press: root.manager.current = 'menu'
-""")
-
-def callback(instance):
-    print('The button <%s> is being pressed' % instance.text)
-    instance.parent.parent.parent.current = "login"
-
-# Declare both screens
-class StartScreen(Screen):
-
-    def __init__(self, **kwargs):
-        super(StartScreen, self).__init__(**kwargs)
-        self.layout = GridLayout(cols=2)
-        self.add_widget(self.layout)
-        self.create_btn = self.layout.add_widget(Button(text="Create Account"))
-        self.login_btn = self.layout.add_widget(Button(text="Login", on_press=callback))
-        print("got here")
-
-
-class BackToStartBtn(Button):
-
-    def __init__(self, **kwargs):
-        super(BackToStartBtn, self).__init__(**kwargs)
 
 class UsernamePassword(GridLayout):
 
@@ -91,7 +52,7 @@ class LoginScreen(Screen):
         self.add_widget(self.layout)
         self.login_space = LoginSpace(size_hint=(1, .2))
         self.layout.add_widget(self.login_space)
-        self.layout.add_widget(Button(text="Back", size_hint=(1, .1)))
+        self.layout.add_widget(BackStartScreenBtn())
         blank_space = BoxLayout(size_hint=(1, .7))
         self.layout.add_widget(blank_space)
 
@@ -103,20 +64,28 @@ class CreateAccountScreen(Screen):
         self.add_widget(self.layout)
         self.create_account_space = CreateAccountSpace(size_hint=(1, .2))
         self.layout.add_widget(self.create_account_space)
-        self.layout.add_widget(Button(text="Back", size_hint=(1, .1)))
+        self.layout.add_widget(BackStartScreenBtn())
         blank_space = BoxLayout(size_hint=(1, .7))
         self.layout.add_widget(blank_space)
+
+
+class StartScreen(Screen):
+
+    def __init__(self, **kwargs):
+        super(StartScreen, self).__init__(**kwargs)
+        self.layout = GridLayout(cols=2)
+        self.add_widget(self.layout)
+        self.create_btn = self.layout.add_widget(GotoCreateAccountBtn())
+        self.login_btn = self.layout.add_widget(GotoLoginScreenBtn())
 
 
 class SonoraApp(App):
 
     def build(self):
         # Create the screen manager
-        sm = ScreenManager()
-        sm.add_widget(StartScreen(name='start'))
-        sm.add_widget(LoginScreen(name='login'))
+        self.sm = ScreenManager()
+        self.sm.add_widget(StartScreen(name='start'))
+        self.sm.add_widget(LoginScreen(name='login'))
+        self.sm.add_widget(CreateAccountScreen(name='create_account'))
+        return self.sm
 
-        return sm
-
-if __name__ == '__main__':
-    SonoraApp().run()

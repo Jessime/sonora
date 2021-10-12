@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "sonora"
+version = "0.1.0"
+description = "An adventure in the Sonoran Desert"
+authors = ["Jessime Kirk <jessime.kirk@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+requests = "^2.26.0"
+anvil-uplink = "^0.3.40"
+bcrypt = "^3.2.0"
+kivy = {version = "^2.0.0", extras = ["full"]}
+loguru = "^0.5.3"
+
+[tool.poetry.dev-dependencies]
+ipython = "^7.28.0"
+black = "^21.9b0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 120
+
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+line_length = 120

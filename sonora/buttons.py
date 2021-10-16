@@ -4,6 +4,8 @@ from loguru import logger
 import bcrypt
 import anvil.server
 
+from sonora.popups import ErrorPopup
+
 
 def switch_to_screen(new_screen, direction="left"):
     logger.info(f"Switching to {new_screen}")
@@ -41,8 +43,14 @@ class CreateGameBtn(Button, ModelUpdater):
         self.text = "Create Game"
 
     def on_press(self):
-        logger.info("I'm creating a new game")
+        opponent_name = self.parent.parent.username.text
+        error = anvil.server.call("create_game", self.user.username, opponent_name)
+        if error is not None:
+            ErrorPopup(message=error).open()
 
+        logger.info(f"Creating a new game with {opponent_name}")
+
+        # switch_to_screen
 class GotoCreateGameBtn(Button, ModelUpdater):
     def __init__(self, **kwargs):
         super(GotoCreateGameBtn, self).__init__(**kwargs)

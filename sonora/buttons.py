@@ -1,5 +1,6 @@
 from kivy.app import App
 from kivy.uix.button import Button
+from kivy.graphics import Color
 from loguru import logger
 import bcrypt
 import anvil.server
@@ -41,9 +42,13 @@ class CreateGameBtn(Button, ModelUpdater):
         super(CreateGameBtn, self).__init__(**kwargs)
         self.size_hint = (1, .1)
         self.text = "Create Game"
+        self.background_color = (0.6235, 0.7412, 0.6471, 1)
 
     def on_press(self):
         opponent_name = self.parent.parent.username.text
+        if self.user.username == opponent_name:
+            ErrorPopup(message="You cannot start a game with yourself.").open()
+            return
         error = anvil.server.call("create_game", self.user.username, opponent_name)
         if error is not None:
             ErrorPopup(message=error).open()
@@ -51,11 +56,14 @@ class CreateGameBtn(Button, ModelUpdater):
         logger.info(f"Creating a new game with {opponent_name}")
 
         # switch_to_screen
+
+
 class GotoCreateGameBtn(Button, ModelUpdater):
     def __init__(self, **kwargs):
         super(GotoCreateGameBtn, self).__init__(**kwargs)
         self.text = "Create Game"
         self.size_hint = (1, .1)
+        self.background_color = (0.6235, 0.7412, 0.6471, 1)
 
     def on_press(self):
         switch_to_screen("create_game")
@@ -109,8 +117,10 @@ class LoginBtn(Button, ModelUpdater):
 
     def on_press(self):
         inputs = self.parent.login_input_space
-        username = inputs.username.text
-        password = bytes(inputs.password.text, encoding="utf8")
+        self.login(username=inputs.username.text, password=inputs.password.text)
+
+    def login(self, username, password):
+        password = bytes(password, encoding="utf8")
         pass_hash = anvil.server.call("get_pass_hash", username)
         correct_pass = bcrypt.checkpw(password, bytes(pass_hash, encoding="utf-8"))
         if correct_pass:
@@ -137,6 +147,7 @@ class BackHomeScreenBtn(Button, ModelUpdater):
         super(BackHomeScreenBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
         self.text = "Back"
+        self.background_color = (0.6235, 0.7412, 0.6471, 1)
 
     def on_press(self):
         switch_to_screen("user_home", "right")

@@ -2,4 +2,4 @@
 ve/
 __pycache__/
 scratch*
-
+.venv/

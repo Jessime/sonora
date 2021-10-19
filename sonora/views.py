@@ -4,6 +4,7 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.textinput import TextInput
+from kivy.graphics import Color, Rectangle
 
 from sonora.buttons import (
     GotoLoginScreenBtn,
@@ -44,31 +45,38 @@ class CreateGameScreen(Screen):
         self.layout.add_widget(BoxLayout(size_hint=(1, .7)))
 
 
-class UserHomeScreen(Screen, ModelViewer):
+class Greeting(Label, ModelViewer):
+    def __init__(self, **kwargs):
+        super(Greeting, self).__init__(**kwargs)
+        self.color = (0, 0, 0, 1)
+        self.size_hint = (1, .1)
+        with self.canvas.before:
+            Color(0.9922, .9647, 0.8863, 1)
+            self.background = Rectangle(size=self.size, pos=self.pos)
+
+        self.bind(size=self.update_rect, pos=self.update_rect)
+        self.user.bind(username=self.update_text)
+
+    def update_rect(self, instance, _):
+        self.background.pos = instance.pos
+        self.background.size = instance.size
+
+    def update_text(self, _, name):
+        self.text = f"Hello, {name}"
+
+
+class UserHomeScreen(Screen):
     """Display all the ongoing games a user currently has."""
     def __init__(self, **kwargs):
         super(UserHomeScreen, self).__init__(**kwargs)
         self.name = "user_home"
         self.layout = BoxLayout(orientation="vertical")
         self.add_widget(self.layout)
-        # TODO implement these, starting with CreateGame
-        # games = get_games()
-        # games = range(3)
-        # for game in games:
-        #     self.layout.add_widget(GotoGameBtn(game))
-
-        # blank_space = BoxLayout(size_hint=(1, 1-(.1*len(games))))
-
-        self.greeting = Label()
-        self.user.bind(username=self.update_text)
-        self.layout.add_widget(self.greeting)
-
+        self.layout.add_widget(Greeting())
         blank_space = BoxLayout(size_hint=(1, .8))
         self.layout.add_widget(blank_space)
         self.layout.add_widget(GotoCreateGameBtn())
 
-    def update_text(self, _, name):
-        self.greeting.text = f"Hello, {name}"
 
 class UsernamePassword(GridLayout):
     def __init__(self, **kwargs):

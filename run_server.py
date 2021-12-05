@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import anvil.server
 
 # import to register server functions

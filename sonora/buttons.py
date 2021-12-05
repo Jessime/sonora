@@ -1,6 +1,5 @@
 from kivy.app import App
 from kivy.uix.button import Button
-from kivy.graphics import Color
 from loguru import logger
 import bcrypt
 import anvil.server
@@ -89,7 +88,7 @@ class CreateAccountBtn(Button, ModelUpdater):
         super(CreateAccountBtn, self).__init__(**kwargs)
         self.text = "Create Account"
 
-    def update(self, username):
+    def update_model(self, username):
         self.user.username = username
 
     def on_press(self):
@@ -99,7 +98,7 @@ class CreateAccountBtn(Button, ModelUpdater):
         hashed = bcrypt.hashpw(bytes(password, encoding="utf8"), bcrypt.gensalt())
         anvil.server.call("create_account", username, hashed.decode("utf-8"))
         logger.info(f"Created new account for {username}")
-
+        self.update_model(username)
         switch_to_screen("user_home")
 
 

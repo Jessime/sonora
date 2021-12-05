@@ -19,6 +19,7 @@ from sonora.buttons import (
 )
 from sonora.static import SonoraColor
 
+
 class ModelViewer:
     """Can be subclassed by any widget that needs to VIEW data."""
     def __init__(self, **kwargs):
@@ -71,8 +72,6 @@ class ActiveGames(GridLayout):
         super(ActiveGames, self).__init__(**kwargs)
         self.cols = 4
         self.size_hint = (1, .8)
-        for i in range(9):
-            self.add_widget(ResumeGameBtn())
 
 
 class UserHomeScreen(Screen):

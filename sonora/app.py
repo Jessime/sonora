@@ -12,7 +12,4 @@ class SonoraApp(App):
         self.user = User()
         self.sm = get_screen_manager()
 
-        from sonora.buttons import LoginBtn
-        LoginBtn().login("jk", "bad")
-
         return self.sm

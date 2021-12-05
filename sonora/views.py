@@ -15,8 +15,9 @@ from sonora.buttons import (
     CreateAccountBtn,
     GotoCreateGameBtn,
     LoginBtn,
+    ResumeGameBtn,
 )
-
+from sonora.static import SonoraColor
 
 class ModelViewer:
     """Can be subclassed by any widget that needs to VIEW data."""
@@ -51,7 +52,7 @@ class Greeting(Label, ModelViewer):
         self.color = (0, 0, 0, 1)
         self.size_hint = (1, .1)
         with self.canvas.before:
-            Color(0.9922, .9647, 0.8863, 1)
+            Color(*SonoraColor.TERMINAL_PAPER.value)
             self.background = Rectangle(size=self.size, pos=self.pos)
 
         self.bind(size=self.update_rect, pos=self.update_rect)
@@ -65,6 +66,15 @@ class Greeting(Label, ModelViewer):
         self.text = f"Hello, {name}"
 
 
+class ActiveGames(GridLayout):
+    def __init__(self, **kwargs):
+        super(ActiveGames, self).__init__(**kwargs)
+        self.cols = 4
+        self.size_hint = (1, .8)
+        for i in range(9):
+            self.add_widget(ResumeGameBtn())
+
+
 class UserHomeScreen(Screen):
     """Display all the ongoing games a user currently has."""
     def __init__(self, **kwargs):
@@ -73,8 +83,8 @@ class UserHomeScreen(Screen):
         self.layout = BoxLayout(orientation="vertical")
         self.add_widget(self.layout)
         self.layout.add_widget(Greeting())
-        blank_space = BoxLayout(size_hint=(1, .8))
-        self.layout.add_widget(blank_space)
+
+        self.layout.add_widget(ActiveGames())
         self.layout.add_widget(GotoCreateGameBtn())
 
 

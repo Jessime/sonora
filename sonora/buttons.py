@@ -6,7 +6,7 @@ import bcrypt
 import anvil.server
 
 from sonora.popups import ErrorPopup
-
+from sonora.static import SonoraColor
 
 def switch_to_screen(new_screen, direction="left"):
     logger.info(f"Switching to {new_screen}")
@@ -37,12 +37,18 @@ class ModelUpdater:
         raise NotImplemented
 
 
+class ResumeGameBtn(Button):
+    def __init__(self, **kwargs):
+        super(ResumeGameBtn, self).__init__(**kwargs)
+        self.text = "Resume Game"
+
+
 class CreateGameBtn(Button, ModelUpdater):
     def __init__(self, **kwargs):
         super(CreateGameBtn, self).__init__(**kwargs)
         self.size_hint = (1, .1)
         self.text = "Create Game"
-        self.background_color = (0.6235, 0.7412, 0.6471, 1)
+        self.background_color = SonoraColor.SONORAN_SAGE.value
 
     def on_press(self):
         opponent_name = self.parent.parent.username.text
@@ -63,7 +69,7 @@ class GotoCreateGameBtn(Button, ModelUpdater):
         super(GotoCreateGameBtn, self).__init__(**kwargs)
         self.text = "Create Game"
         self.size_hint = (1, .1)
-        self.background_color = (0.6235, 0.7412, 0.6471, 1)
+        self.background_color = SonoraColor.SONORAN_SAGE.value
 
     def on_press(self):
         switch_to_screen("create_game")
@@ -115,9 +121,8 @@ class LoginBtn(Button, ModelUpdater):
         self.user.username = username
         print(f"{id(self.user)} as name: {self.user.username}")
 
-    def on_press(self):
-        inputs = self.parent.login_input_space
-        self.login(username=inputs.username.text, password=inputs.password.text)
+    def get_games(self, username):
+        pass
 
     def login(self, username, password):
         password = bytes(password, encoding="utf8")
@@ -130,6 +135,11 @@ class LoginBtn(Button, ModelUpdater):
         else:
             logger.warning(f"Oh no! {password} isn't correct for {username}")
             pass  # TODO implement
+
+    def on_press(self):
+        inputs = self.parent.login_input_space
+        self.login(username=inputs.username.text, password=inputs.password.text)
+        self.get_games(inputs.username.text)
 
 
 class BackStartScreenBtn(Button, ModelUpdater):
@@ -147,7 +157,7 @@ class BackHomeScreenBtn(Button, ModelUpdater):
         super(BackHomeScreenBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
         self.text = "Back"
-        self.background_color = (0.6235, 0.7412, 0.6471, 1)
+        self.background_color = SonoraColor.SEDONA_SUNSET.value
 
     def on_press(self):
         switch_to_screen("user_home", "right")

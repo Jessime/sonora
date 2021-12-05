@@ -11,5 +11,8 @@ class SonoraApp(App):
         anvil.server.connect(UPLINK_CLIENT_KEY)
         self.user = User()
         self.sm = get_screen_manager()
-        # self.sm.current = "user_home"  # dev
+
+        from sonora.buttons import LoginBtn
+        LoginBtn().login("jk", "bad")
+
         return self.sm

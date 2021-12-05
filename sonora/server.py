@@ -2,6 +2,7 @@ import os
 
 import anvil.server
 from anvil.tables import app_tables
+import anvil.tables.query as q
 
 anvil.server.connect(os.environ["SONORA_UPLINK_KEY"])
 
@@ -23,13 +24,23 @@ def create_account(username, hashed):
 def get_pass_hash(username):
     return app_tables.users.get(username=username)["password_hash"]
 
+
 @anvil.server.callable
 def create_game(username, opponent_name):
+    user = app_tables.users.get(username=username)
     opponent = app_tables.users.get(username=opponent_name)
     if opponent is None:
-        return "ERROR: opponent missing"
-    existing_game = app_tables.games.get(player1=username, player2=opponent_name)
+        return "This player does not exist in our database. Please try again."
+    existing_game = app_tables.games.get(player1=user, player2=opponent)
     if existing_game is not None:
-        return "ERROR: game already exists"
+        return "A game between you and this player already exists."
 
-    app_tables.users.add_row(player1=username, player2=opponent_name, status="SETUP")
+    app_tables.games.add_row(player1=user, player2=opponent, status="SETUP")
+
+
+@anvil.server.callable
+def get_games(username):
+    user = app_tables.users.get(username=username)
+    games = list(app_tables.games.search(q.any_of(player1=user, player2=user)))
+    return games
+

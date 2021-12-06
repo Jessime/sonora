@@ -20,7 +20,7 @@ class ModelUpdater:
     It also provides a consistent interface through which Buttons can update models.
     Don't add this class directly to any widgets. Subclass it.
 
-    Buttons are repsonsible for overridding the `update` method.
+    Buttons are responsible for overriding the `update_model` method.
     """
 
     def __init__(self, **kwargs):
@@ -28,8 +28,8 @@ class ModelUpdater:
         # If you have another model besides User
         # models = namedtuple("Models", ["user", "games"])
         # self.models = models(root.user, root.games)
-        root = App.get_running_app()
-        self.user = root.user
+        app = App.get_running_app()
+        self.user = app.user
 
     def update_model(self, **kwargs):
         """Override in children as the entrypoint to modifying the models"""
@@ -37,9 +37,9 @@ class ModelUpdater:
 
 
 class ResumeGameBtn(Button):
-    def __init__(self, **kwargs):
+    def __init__(self, opponent, status, **kwargs):
         super(ResumeGameBtn, self).__init__(**kwargs)
-        self.text = "Resume Game"
+        self.text = f"Resume Game with {opponent}.\n(Status: {status})"
 
 
 class CreateGameBtn(Button, ModelUpdater):
@@ -116,9 +116,9 @@ class LoginBtn(Button, ModelUpdater):
         super(LoginBtn, self).__init__(**kwargs)
         self.text = "Login"
 
-    def update_model(self, username):
+    def update_model(self, username, games):
         self.user.username = username
-        print(f"{id(self.user)} as name: {self.user.username}")
+        self.user.game_rows = games
 
     def get_games(self, username):
         pass
@@ -129,7 +129,9 @@ class LoginBtn(Button, ModelUpdater):
         correct_pass = bcrypt.checkpw(password, bytes(pass_hash, encoding="utf-8"))
         if correct_pass:
             logger.info(f"{username} successfully logged in")
-            self.update_model(username)
+            games = anvil.server.call("get_games", "jk")
+            logger.info(f"Found {len(games)} games.")
+            self.update_model(username, games)
             switch_to_screen("user_home")
         else:
             logger.warning(f"Oh no! {password} isn't correct for {username}")

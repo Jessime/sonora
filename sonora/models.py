@@ -2,13 +2,14 @@ from string import ascii_uppercase
 
 from dataclasses import dataclass
 from kivy.event import EventDispatcher
-from kivy.properties import StringProperty
+from kivy.properties import StringProperty, ListProperty
 
 
 # @dataclass
 class User(EventDispatcher):
     """Info about the individual playing on this instance of the app."""
     username = StringProperty("")
+    game_rows = ListProperty([])  # These are <LiveObject: anvil.tables.Row>
 
     def on_username(self, a, b):
         print(type(a), a)

@@ -29,8 +29,11 @@ class ModelViewer:
         # If I actually run into a bug based on this, I'll figure out enforcement
 
 
+def SetupGameScreen(Screen):
+    pass
+
+
 class CreateGameScreen(Screen):
-    """Display all the ongoing games a user currently has."""
     def __init__(self, **kwargs):
         super(CreateGameScreen, self).__init__(**kwargs)
         self.name = "create_game"
@@ -67,11 +70,20 @@ class Greeting(Label, ModelViewer):
         self.text = f"Hello, {name}"
 
 
-class ActiveGames(GridLayout):
+class ActiveGames(GridLayout, ModelViewer):
+    """Display all the ongoing games a user currently has."""
     def __init__(self, **kwargs):
         super(ActiveGames, self).__init__(**kwargs)
         self.cols = 4
         self.size_hint = (1, .8)
+        self.user.bind(game_rows=self.update_game_buttons)
+
+    def update_game_buttons(self, arg1, arg2):
+        print(f"{arg1=}, {arg2=}")
+        for game in self.user.game_rows:
+            opponent = game["player1"] if game["player1"]["username"] == self.user.username else game["player2"]
+            game_btn = ResumeGameBtn(opponent["username"], game["status"])
+            self.add_widget(game_btn)
 
 
 class UserHomeScreen(Screen):

@@ -1,11 +1,15 @@
 from kivy.app import App
 from kivy.uix.button import Button
+from kivy.uix.image import Image
+from kivy.uix.behaviors import ButtonBehavior
+from kivy.properties import ColorProperty
 from loguru import logger
 import bcrypt
 import anvil.server
 
-from sonora.popups import ErrorPopup
-from sonora.static import SonoraColor
+from sonora.popups import ConfirmationPopup, ErrorPopup
+from sonora.static import SonoraColor, COLS
+
 
 def switch_to_screen(new_screen, direction="left"):
     logger.info(f"Switching to {new_screen}")
@@ -30,16 +34,108 @@ class ModelUpdater:
         # self.models = models(root.user, root.games)
         app = App.get_running_app()
         self.user = app.user
+        self.animal_types = app.animal_types
+        self.game_setup = app.game_setup
 
     def update_model(self, **kwargs):
         """Override in children as the entrypoint to modifying the models"""
         raise NotImplemented
 
 
+class SetupBoardBtn(Button, ModelUpdater):
+    def __init__(self, row, col, **kwargs):
+        super(SetupBoardBtn, self).__init__(**kwargs)
+        self.row = row
+        self.col = col
+        self.text = f"{col}{str(row)}"
+        self.default_background_color = self.background_color
+
+        self.game_setup.bind(selected_animal_type=self.update_bg_color)
+
+    def is_valid_loc(self):
+        """Return True if the selected animal can be placed in the this location on the board."""
+        segments = self.game_setup.selected_animal_type.cls_segments
+        for (rel_row, rel_col), seg in segments.items():
+            #TODO Add checking for filled square
+            abs_row = self.row + rel_row
+            try:
+                abs_col = COLS[COLS.find(self.col) + rel_col]
+            except IndexError:
+                return False
+            if (abs_row, abs_col) not in self.game_setup.board.grid:
+                return False
+        return True
+
+    def update_bg_color(self, instance, selected_animal_type):
+        if selected_animal_type is None:
+            self.background_color = self.default_background_color
+            return
+        green, red = SonoraColor.SONORAN_SAGE.value, SonoraColor.SEDONA_SUNSET.value
+        self.background_color = green if self.is_valid_loc() else red
+
+    def update_model(self, new_animal):
+        """Add the new animal to the correct location on the board.
+
+        The model can be in one of two states:
+        1. Neither of the animals on the page are on the board.
+           If so, just place the animal.
+        2. An animal from the page is already on the board.
+           If so, remove that animal from the board, then place the new one.
+           (If it's the same animal, this results in a 'move'.)
+        """
+        avail_types = self.game_setup.pages[self.game_setup.active_page]
+        avail_types = (avail_types[0].value, avail_types[1].value)
+        from more_itertools import only
+        existing = only((a for a in self.game_setup.board.animals if isinstance(a, avail_types)))
+        if existing is None:
+            logger.info(f"There's no animal on the board yet.")
+        else:
+            logger.info(f"Removing {existing} from board.")
+            self.game_setup.board.grid[(existing.base_row, existing.base_col)].remove(existing)
+            self.game_setup.board.animals.remove(existing)
+        logger.info(f"Placing {new_animal}.")
+        self.game_setup.board.grid[(self.row, self.col)].append(new_animal)
+        self.game_setup.board.animals.append(new_animal)
+        print(self.game_setup.board.grid)
+        print(self.game_setup.board.animals)
+
+    def on_press(self):
+        if self.game_setup.selected_animal_type is None:
+            logger.info("No animal selected.")
+        elif self.is_valid_loc():
+            print(self.game_setup.selected_animal_type)
+            new_animal = self.game_setup.selected_animal_type(self.row, self.col)
+            self.update_model(new_animal)
+        else:
+            msg = "This is not a valid location for this object."
+            ErrorPopup(message=msg).open()
+
+
+class AnimalButton(ButtonBehavior, Image, ModelUpdater):
+    def __init__(self, animal_type, **kwargs):
+        super(AnimalButton, self).__init__(**kwargs)
+        self.animal_type = animal_type.value
+        self.source = self.animal_type.img
+
+    def update_model(self, select=True):
+        self.game_setup.selected_animal_type = self.animal_type if select else None
+
+    def on_press(self):
+        if self.game_setup.selected_animal_type == self.animal_type:
+            logger.info(f"De-selected {self.animal_type}")
+            self.update_model(False)
+        else:
+            logger.info(f"Selected {self.animal_type} to place.")
+            self.update_model()
+
+
 class ResumeGameBtn(Button):
     def __init__(self, opponent, status, **kwargs):
         super(ResumeGameBtn, self).__init__(**kwargs)
         self.text = f"Resume Game with {opponent}.\n(Status: {status})"
+
+    def on_press(self):
+        switch_to_screen("setup_game")
 
 
 class CreateGameBtn(Button, ModelUpdater):
@@ -63,7 +159,7 @@ class CreateGameBtn(Button, ModelUpdater):
         # switch_to_screen
 
 
-class GotoCreateGameBtn(Button, ModelUpdater):
+class GotoCreateGameBtn(Button):
     def __init__(self, **kwargs):
         super(GotoCreateGameBtn, self).__init__(**kwargs)
         self.text = "Create Game"
@@ -102,7 +198,7 @@ class CreateAccountBtn(Button, ModelUpdater):
         switch_to_screen("user_home")
 
 
-class GotoLoginScreenBtn(Button, ModelUpdater):
+class GotoLoginScreenBtn(Button):
     def __init__(self, **kwargs):
         super(GotoLoginScreenBtn, self).__init__(**kwargs)
         self.text = "Login"
@@ -143,7 +239,7 @@ class LoginBtn(Button, ModelUpdater):
         self.get_games(inputs.username.text)
 
 
-class BackStartScreenBtn(Button, ModelUpdater):
+class BackStartScreenBtn(Button):
     def __init__(self, **kwargs):
         super(BackStartScreenBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
@@ -153,7 +249,7 @@ class BackStartScreenBtn(Button, ModelUpdater):
         switch_to_screen("start", "right")
 
 
-class BackHomeScreenBtn(Button, ModelUpdater):
+class BackHomeScreenBtn(Button):
     def __init__(self, **kwargs):
         super(BackHomeScreenBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
@@ -162,3 +258,28 @@ class BackHomeScreenBtn(Button, ModelUpdater):
 
     def on_press(self):
         switch_to_screen("user_home", "right")
+
+
+class GotoNextSetupPart(Button):
+    def __init__(self, **kwargs):
+        super(GotoNextSetupPart, self).__init__(**kwargs)
+        self.size_hint = (1, 0.1)
+        self.text = "Next"
+        self.background_color = SonoraColor.SONORAN_SAGE.value
+
+    def on_press(self):
+        popup = ConfirmationPopup("Just testing for now.")
+        popup.open()
+        print(f"{popup.confirmation_state=}")
+
+
+class ResetSetup(Button):
+    def __init__(self, **kwargs):
+        super(ResetSetup, self).__init__(**kwargs)
+        self.size_hint = (1, 0.1)
+        self.text = "Reset Board Setup"
+        self.background_color = SonoraColor.SEDONA_SUNSET.value
+
+    def on_press(self):
+        # TODO raise popup warning/confirmation
+        switch_to_screen("setup_game", "right")

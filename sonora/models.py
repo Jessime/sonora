@@ -1,7 +1,7 @@
 from enum import Enum
 from dataclasses import dataclass
 from kivy.event import EventDispatcher
-from kivy.properties import StringProperty, ListProperty, ObjectProperty
+from kivy.properties import StringProperty, ListProperty, ObjectProperty, NumericProperty
 from typing import Optional
 
 from sonora.static import COLS
@@ -20,11 +20,16 @@ class User(EventDispatcher):
 
 class Segment:
     """A single square of an Animal"""
+    img = None
 
     def __init__(self, row, col):
         self.row = row
         self.col = col
         self.shot = False
+
+    def __repr__(self):
+        temp = f"{self.img=}"
+        return f"[{self.__class__.__name__}: {self.shot=} {temp}]"
 
     @property
     def loc(self):
@@ -63,21 +68,30 @@ class Animal:
 class SnakeHead(Segment):
     img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/snake_head.jpeg"
 
+    def __init__(self, row, col):
+        super(SnakeHead, self).__init__(row, col)
+
 
 class SnakeBody(Segment):
     img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/snake_body.jpeg"
+
+    def __init__(self, row, col):
+        super(SnakeBody, self).__init__(row, col)
 
 
 class SnakeTail(Segment):
     img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/snake_tail.jpeg"
 
+    def __init__(self, row, col):
+        super(SnakeTail, self).__init__(row, col)
+
 
 class Snake(Animal):
     img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/snake.jpeg"
     cls_segments = {
-        (0, 0): SnakeHead,
+        (0, 0): SnakeTail,
         (-1, 0): SnakeBody,
-        (-2, 0): SnakeTail,
+        (-2, 0): SnakeHead,
     }
 
     def __init__(self, base_row, base_col):
@@ -85,15 +99,15 @@ class Snake(Animal):
 
 
 class CentipedeHead(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/snake_head.jpeg"
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/centipede_head.png"
 
 
 class CentipedeBody(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/snake_body.jpeg"
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/centipede_body.png"
 
 
 class CentipedeTail(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/snake_tail.jpeg"
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/centipede_tail.png"
 
 
 class Centipede(Animal):
@@ -108,9 +122,83 @@ class Centipede(Animal):
         super(Centipede, self).__init__(base_row, base_col)
 
 
+class JavelinaMouth(Segment):
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/centipede_mouth.png"
+
+
+class JavelinaHead(Segment):
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina_head.jpeg"
+
+
+class JavelinaBack(Segment):
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina_back.png"
+
+
+class JavelinaBottom(Segment):
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina_bottom.png"
+
+
+class Javelina(Animal):
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina.jpeg"
+    cls_segments = {
+        (0, 0): JavelinaMouth,
+        (0, 1): JavelinaBottom,
+        (-1, 0): JavelinaHead,
+        (-1, 1): JavelinaBack,
+    }
+
+    def __init__(self, base_row, base_col):
+        super(Javelina, self).__init__(base_row, base_col)
+
+
+class RingtailHead(Segment):
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/ringtail_head.jpeg"
+
+
+class RingtailBody(Segment):
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/ringtail_body.jpeg"
+
+
+class RingtailTail(Segment):
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/ringtail_tail.jpeg"
+
+
+class RingtailTail2(Segment):
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/ringtail_tail2.jpeg"
+
+
+class Ringtail(Animal):
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina.jpeg"
+    cls_segments = {
+        (0, 0): RingtailHead,
+        (0, 1): RingtailBody,
+        (0, 2): RingtailTail,
+        (1, 2): RingtailTail2,
+    }
+
+    def __init__(self, base_row, base_col):
+        super(Ringtail, self).__init__(base_row, base_col)
+
+
 class AnimalTypes(Enum):
     SNAKE = Snake
     CENTIPEDE = Centipede
+    JAVELINA = Javelina
+    RINGTAIL = Ringtail
+
+
+class Square(EventDispatcher):
+    """A single tile on the Board.
+
+    A Square can only contain one object at a time.
+    This is mostly for simplicity.
+    1. It's how Battleship does it.
+    2. There's no good way to represent multiple objects on a square at the same time.
+    """
+    obj = ObjectProperty(allownone=True)
+
+    def __repr__(self):
+        return "" if self.obj is None else str(self.obj)
 
 
 class Board:
@@ -124,16 +212,24 @@ class Board:
         grid = {}
         for i in range(1, 11):
             for letter in COLS:
-                grid[(i, letter)] = []
+                grid[(i, letter)] = Square()
         return grid
 
 
 # @dataclass
 class GameSetup(EventDispatcher):
     selected_animal_type = ObjectProperty(None, allownone=True)
-    pages: tuple[tuple[AnimalTypes]] = ((AnimalTypes.SNAKE, AnimalTypes.CENTIPEDE),)  # TODO add other tuples
-    active_page: int = 0
+    active_page = NumericProperty()
+    pages: tuple[tuple[AnimalTypes]] = (
+        (AnimalTypes.SNAKE, AnimalTypes.CENTIPEDE),
+        (AnimalTypes.JAVELINA, AnimalTypes.RINGTAIL)
+    )  # TODO add other tuples
     board: Board = Board()
+
+    @property
+    def avail_types(self):
+        page = self.pages[self.active_page]
+        return page[0].value, page[1].value
 
 
 class Game:

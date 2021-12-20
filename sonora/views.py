@@ -72,15 +72,27 @@ class SetupHeader(Label):
 class SetupLeftUpper(BoxLayout, ModelViewer):
     def __init__(self, **kwargs):
         super(SetupLeftUpper, self).__init__(**kwargs)
-        self.add_widget(AnimalButton(self.animal_types.SNAKE))
+        self.animal_button = AnimalButton(self.game_setup.pages[self.game_setup.active_page][0])
+        self.add_widget(self.animal_button)
         set_background_color(self, SonoraColor.MOUSE_FUR)
+
+    def update_animal_button(self, instance, n):
+        self.remove_widget(self.animal_button)
+        self.animal_button = AnimalButton(self.game_setup.pages[n][0])
+        self.add_widget(self.animal_button)
 
 
 class SetupLeftLower(BoxLayout, ModelViewer):
     def __init__(self, **kwargs):
         super(SetupLeftLower, self).__init__(**kwargs)
-        self.add_widget(AnimalButton(self.animal_types.CENTIPEDE))
+        self.animal_button = AnimalButton(self.game_setup.pages[self.game_setup.active_page][1])
+        self.add_widget(self.animal_button)
         set_background_color(self, SonoraColor.MOUSE_FUR)
+
+    def update_animal_button(self, instance, n):
+        self.remove_widget(self.animal_button)
+        self.animal_button = AnimalButton(self.game_setup.pages[n][1])
+        self.add_widget(self.animal_button)
 
 
 class SetupLeft(BoxLayout):
@@ -192,11 +204,6 @@ class Greeting(Label, ModelViewer):
         self.color = (0, 0, 0, 1)
         self.size_hint = (1, .1)
         set_background_color(self, SonoraColor.TERMINAL_PAPER)
-        # with self.canvas.before:
-        #     Color(*SonoraColor.TERMINAL_PAPER.value)
-        #     self.background = Rectangle(size=self.size, pos=self.pos)
-
-        # self.bind(size=self.update_rect, pos=self.update_rect)
         self.user.bind(username=self.update_text)
 
     def update_rect(self, instance, _):

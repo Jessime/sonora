@@ -21,7 +21,8 @@ class ConfirmBtn(Button):
         self.background_color = SonoraColor.SONORAN_SAGE.value
 
     def on_press(self):
-        self.parent.confirmation_state = True
+        print('why is this not clicking')
+        self.parent.confirmed = True
 
 
 class CancelBtn(Button):
@@ -31,7 +32,7 @@ class CancelBtn(Button):
         self.background_color = SonoraColor.SEDONA_SUNSET.value
 
     def on_press(self):
-        self.parent.confirmation_state = False
+        self.parent.dismiss()
 
 
 class ConfirmationContent(BoxLayout):
@@ -50,6 +51,6 @@ class ConfirmationPopup(Popup):
         self.title_align = "center"
         # self.content = Label(text=message)
         self.size_hint = (.5, .5)
-        self.confirmation_state = None
+        self.confirmed = False
         self.content = ConfirmationContent(message)
 

@@ -6,6 +6,7 @@ from kivy.properties import ColorProperty
 from loguru import logger
 import bcrypt
 import anvil.server
+from more_itertools import only
 
 from sonora.popups import ConfirmationPopup, ErrorPopup
 from sonora.static import SonoraColor, COLS
@@ -49,8 +50,9 @@ class SetupBoardBtn(Button, ModelUpdater):
         self.col = col
         self.text = f"{col}{str(row)}"
         self.default_background_color = self.background_color
-
         self.game_setup.bind(selected_animal_type=self.update_bg_color)
+        self.square = self.game_setup.board.grid[(self.row, self.col)]
+        self.square.bind(obj=self.update_bg_img)
 
     def is_valid_loc(self):
         """Return True if the selected animal can be placed in the this location on the board."""
@@ -67,11 +69,27 @@ class SetupBoardBtn(Button, ModelUpdater):
         return True
 
     def update_bg_color(self, instance, selected_animal_type):
-        if selected_animal_type is None:
+        occupied = self.square.obj is not None
+        if occupied or selected_animal_type is None:
             self.background_color = self.default_background_color
             return
         green, red = SonoraColor.SONORAN_SAGE.value, SonoraColor.SEDONA_SUNSET.value
         self.background_color = green if self.is_valid_loc() else red
+
+    def update_bg_img(self, instance, obj):
+        """Important side effects:
+
+        1. Calls update_bg_color
+        2. Turns on/off showing text
+        """
+        default = "atlas://data/images/defaulttheme/button"
+        self.update_bg_color(None, None)
+        if obj is None:
+            self.background_normal = default
+            self.text = f"{self.col}{str(self.row)}"
+        else:
+            self.background_normal = obj.img
+            self.text = ""
 
     def update_model(self, new_animal):
         """Add the new animal to the correct location on the board.
@@ -83,18 +101,18 @@ class SetupBoardBtn(Button, ModelUpdater):
            If so, remove that animal from the board, then place the new one.
            (If it's the same animal, this results in a 'move'.)
         """
-        avail_types = self.game_setup.pages[self.game_setup.active_page]
-        avail_types = (avail_types[0].value, avail_types[1].value)
-        from more_itertools import only
+        avail_types = self.game_setup.avail_types
         existing = only((a for a in self.game_setup.board.animals if isinstance(a, avail_types)))
         if existing is None:
             logger.info(f"There's no animal on the board yet.")
         else:
             logger.info(f"Removing {existing} from board.")
-            self.game_setup.board.grid[(existing.base_row, existing.base_col)].remove(existing)
+            for seg in existing.segments:
+                self.game_setup.board.grid[(seg.row, seg.col)].obj = None
             self.game_setup.board.animals.remove(existing)
         logger.info(f"Placing {new_animal}.")
-        self.game_setup.board.grid[(self.row, self.col)].append(new_animal)
+        for seg in new_animal.segments:
+            self.game_setup.board.grid[(seg.row, seg.col)].obj = seg
         self.game_setup.board.animals.append(new_animal)
         print(self.game_setup.board.grid)
         print(self.game_setup.board.animals)
@@ -260,17 +278,32 @@ class BackHomeScreenBtn(Button):
         switch_to_screen("user_home", "right")
 
 
-class GotoNextSetupPart(Button):
+class GotoNextSetupPart(Button, ModelUpdater):
     def __init__(self, **kwargs):
         super(GotoNextSetupPart, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
         self.text = "Next"
         self.background_color = SonoraColor.SONORAN_SAGE.value
 
+    def update_model(self):
+        self.game_setup.active_page += 1
+
     def on_press(self):
-        popup = ConfirmationPopup("Just testing for now.")
+        avail_types = self.game_setup.avail_types
+        existing = only((a for a in self.game_setup.board.animals if isinstance(a, avail_types)))
+        if existing is None:
+            msg = "You must place an animal before continuing."
+            ErrorPopup(message=msg).open()
+            return
+        msg = ("Are you sure you want to continue?\n"
+               "You cannot adjust these animals after.")
+        popup = ConfirmationPopup(msg)
         popup.open()
-        print(f"{popup.confirmation_state=}")
+        print(f"{popup.confirmed=}")
+        if popup.confirmed:
+            self.update_model()
+            visible_animals = self.game_setup.pages[self.game_setup.active_page]
+            logger.info(f"Now placing: {visible_animals}")
 
 
 class ResetSetup(Button):

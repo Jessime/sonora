@@ -1,8 +1,8 @@
 import os
 
 import anvil.server
-from anvil.tables import app_tables
 import anvil.tables.query as q
+from anvil.tables import app_tables
 
 anvil.server.connect(os.environ["SONORA_UPLINK_KEY"])
 
@@ -43,4 +43,3 @@ def get_games(username):
     user = app_tables.users.get(username=username)
     games = list(app_tables.games.search(q.any_of(player1=user, player2=user)))
     return games
-

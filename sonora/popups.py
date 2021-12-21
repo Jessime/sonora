@@ -1,8 +1,8 @@
-from kivy.uix.popup import Popup
-from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.label import Label
+from kivy.uix.popup import Popup
 
-from sonora.buttons_dir.popup_btns import CancelBtn, NextSetupPageConfirmBtn, FinishSetupConfirmBtn
+from sonora.buttons_dir.popup_btns import CancelBtn, FinishSetupConfirmBtn, NextSetupPageConfirmBtn
 
 
 class ErrorPopup(Popup):
@@ -11,7 +11,7 @@ class ErrorPopup(Popup):
         self.title = "ERROR"
         self.title_align = "center"
         self.content = Label(text=message)
-        self.size_hint = (.5, .5)
+        self.size_hint = (0.5, 0.5)
 
 
 class ConfirmationContent(BoxLayout):
@@ -39,7 +39,7 @@ class ConfirmationPopup(Popup):
         super(ConfirmationPopup, self).__init__(**kwargs)
         self.title = "WARNING"
         self.title_align = "center"
-        self.size_hint = (.5, .5)
+        self.size_hint = (0.5, 0.5)
 
 
 class NextSetupPageConfirmation(ConfirmationPopup):

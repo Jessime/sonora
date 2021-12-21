@@ -1,27 +1,27 @@
 from kivy.app import App
-from kivy.uix.screenmanager import Screen, ScreenManager
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
 from kivy.graphics import Color, Rectangle
+from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.gridlayout import GridLayout
+from kivy.uix.label import Label
+from kivy.uix.screenmanager import Screen, ScreenManager
+from kivy.uix.textinput import TextInput
 
 from sonora.buttons import (
     AnimalButton,
-    GotoLoginScreenBtn,
-    GotoCreateAccountBtn,
     BackHomeScreenBtn,
     BackStartScreenBtn,
-    CreateGameBtn,
     CreateAccountBtn,
+    CreateGameBtn,
+    GotoCreateAccountBtn,
     GotoCreateGameBtn,
-    LoginBtn,
-    ResumeGameBtn,
+    GotoLoginScreenBtn,
     GotoNextSetupPart,
+    LoginBtn,
     ResetSetup,
+    ResumeGameBtn,
     SetupBoardBtn,
 )
-from sonora.static import SonoraColor, COLS
+from sonora.static import COLS, SonoraColor
 
 
 def set_background_color(label, color):
@@ -29,6 +29,7 @@ def set_background_color(label, color):
 
     Note: Sorry for this piece of magic. It's what's needed since Kivy doesn't have it by default.
     """
+
     def update_rect(self, instance):
         self.background.pos = self.pos
         self.background.size = self.size
@@ -42,6 +43,7 @@ def set_background_color(label, color):
 
 class ModelViewer:
     """Can be subclassed by any widget that needs to VIEW data."""
+
     def __init__(self, **kwargs):
         super(ModelViewer, self).__init__(**kwargs)
         app = App.get_running_app()
@@ -111,7 +113,7 @@ class InstructionHeader(Label):
         super(InstructionHeader, self).__init__(**kwargs)
         self.text = "Instructions"
         self.color = (0, 0, 0, 1)
-        self.size_hint = (1, .2)
+        self.size_hint = (1, 0.2)
         set_background_color(self, SonoraColor.TERMINAL_PAPER)
 
 
@@ -121,13 +123,15 @@ class Instructions(BoxLayout):
         self.orientation = "vertical"
         self.size_hint = (1, 0.5)
         self.add_widget(InstructionHeader())
-        txt = ("1. Click the animal you want to place.\n"
-               "2. The valid squares for placing the animal will turn green.\n"
-               "3. Click a tile on the board to choose the location.\n"
-               "    (The tile you click will be the top-left of the animal.)\n"
-               "4. Click another tile if you want to relocate the animal.\n"
-               "5. Click 'Next' when you are satisfied.")
-        self.add_widget(Label(text=txt, size_hint=(1, .8)))
+        txt = (
+            "1. Click the animal you want to place.\n"
+            "2. The valid squares for placing the animal will turn green.\n"
+            "3. Click a tile on the board to choose the location.\n"
+            "    (The tile you click will be the top-left of the animal.)\n"
+            "4. Click another tile if you want to relocate the animal.\n"
+            "5. Click 'Next' when you are satisfied."
+        )
+        self.add_widget(Label(text=txt, size_hint=(1, 0.8)))
 
 
 def board_view_generator():
@@ -173,6 +177,7 @@ class SetupGameScreen(Screen):
     This can be useful if you wanna reset the board,
     but could be frustrating if a player closes the window part way through.
     """
+
     def __init__(self, **kwargs):
         super(SetupGameScreen, self).__init__(**kwargs)
         self.name = "setup_game"
@@ -197,14 +202,14 @@ class CreateGameScreen(Screen):
         self.username_space.add_widget(self.username)
         self.layout.add_widget(CreateGameBtn())
         self.layout.add_widget(BackHomeScreenBtn())
-        self.layout.add_widget(BoxLayout(size_hint=(1, .7)))
+        self.layout.add_widget(BoxLayout(size_hint=(1, 0.7)))
 
 
 class Greeting(Label, ModelViewer):
     def __init__(self, **kwargs):
         super(Greeting, self).__init__(**kwargs)
         self.color = (0, 0, 0, 1)
-        self.size_hint = (1, .1)
+        self.size_hint = (1, 0.1)
         set_background_color(self, SonoraColor.TERMINAL_PAPER)
         self.user.bind(username=self.update_text)
 
@@ -218,10 +223,11 @@ class Greeting(Label, ModelViewer):
 
 class ActiveGames(GridLayout, ModelViewer):
     """Display all the ongoing games a user currently has."""
+
     def __init__(self, **kwargs):
         super(ActiveGames, self).__init__(**kwargs)
         self.cols = 4
-        self.size_hint = (1, .8)
+        self.size_hint = (1, 0.8)
         self.user.bind(game_rows=self.update_game_buttons)
 
     def update_game_buttons(self, arg1, arg2):
@@ -234,6 +240,7 @@ class ActiveGames(GridLayout, ModelViewer):
 
 class UserHomeScreen(Screen):
     """Display all the ongoing games a user currently has."""
+
     def __init__(self, **kwargs):
         super(UserHomeScreen, self).__init__(**kwargs)
         self.name = "user_home"

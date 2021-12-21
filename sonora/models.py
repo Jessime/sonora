@@ -1,7 +1,7 @@
 from enum import Enum
 
 from kivy.event import EventDispatcher
-from kivy.properties import StringProperty, ListProperty, ObjectProperty, NumericProperty
+from kivy.properties import ListProperty, NumericProperty, ObjectProperty, StringProperty
 from loguru import logger
 from more_itertools import only
 
@@ -10,6 +10,7 @@ from sonora.static import COLS
 
 class User(EventDispatcher):
     """Info about the individual playing on this instance of the app."""
+
     username = StringProperty("")
     game_rows = ListProperty([])  # These are <LiveObject: anvil.tables.Row>
 
@@ -21,6 +22,7 @@ class User(EventDispatcher):
 
 class Segment:
     """A single square of an Animal"""
+
     img = None
 
     def __init__(self, row, col):
@@ -196,6 +198,7 @@ class Square(EventDispatcher):
     1. It's how Battleship does it.
     2. There's no good way to represent multiple objects on a square at the same time.
     """
+
     obj = ObjectProperty(allownone=True)
 
     def __repr__(self):
@@ -203,7 +206,6 @@ class Square(EventDispatcher):
 
 
 class Board:
-
     def __init__(self):
         self.grid = self.init_grid()
         self.animals = []
@@ -223,7 +225,7 @@ class GameSetup(EventDispatcher):
     active_page = NumericProperty()
     pages: tuple[tuple[AnimalTypes]] = (
         (AnimalTypes.SNAKE, AnimalTypes.CENTIPEDE),
-        (AnimalTypes.JAVELINA, AnimalTypes.RINGTAIL)
+        (AnimalTypes.JAVELINA, AnimalTypes.RINGTAIL),
     )  # TODO add other tuples
     board: Board = Board()
 
@@ -250,4 +252,3 @@ class Game:
         self.player2 = player2
         self.status = "SETUP"
         self.board = Board()  # TODO Do I want to make this here or pass it from the setup? :shrug:
-

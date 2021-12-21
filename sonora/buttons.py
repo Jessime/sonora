@@ -1,15 +1,15 @@
+import anvil.server
+import bcrypt
 from kivy.app import App
+from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.button import Button
 from kivy.uix.image import Image
-from kivy.uix.behaviors import ButtonBehavior
 from loguru import logger
-import bcrypt
-import anvil.server
 from more_itertools import only
 
 from sonora.buttons_dir.updater import ModelUpdater
-from sonora.popups import NextSetupPageConfirmation, FinishSetupConfirmation, ErrorPopup
-from sonora.static import SonoraColor, COLS
+from sonora.popups import ErrorPopup, FinishSetupConfirmation, NextSetupPageConfirmation
+from sonora.static import COLS, SonoraColor
 
 
 def switch_to_screen(new_screen, direction="left"):
@@ -34,7 +34,7 @@ class SetupBoardBtn(Button, ModelUpdater):
         """Return True if the selected animal can be placed in the this location on the board."""
         segments = self.game_setup.selected_animal_type.cls_segments
         for (rel_row, rel_col), seg in segments.items():
-            #TODO Add checking for filled square
+            # TODO Add checking for filled square
             abs_row = self.row + rel_row
             try:
                 abs_col = COLS[COLS.find(self.col) + rel_col]
@@ -138,7 +138,7 @@ class ResumeGameBtn(Button):
 class CreateGameBtn(Button, ModelUpdater):
     def __init__(self, **kwargs):
         super(CreateGameBtn, self).__init__(**kwargs)
-        self.size_hint = (1, .1)
+        self.size_hint = (1, 0.1)
         self.text = "Create Game"
         self.background_color = SonoraColor.SONORAN_SAGE.value
 
@@ -160,7 +160,7 @@ class GotoCreateGameBtn(Button):
     def __init__(self, **kwargs):
         super(GotoCreateGameBtn, self).__init__(**kwargs)
         self.text = "Create Game"
-        self.size_hint = (1, .1)
+        self.size_hint = (1, 0.1)
         self.background_color = SonoraColor.SONORAN_SAGE.value
 
     def on_press(self):
@@ -276,13 +276,11 @@ class GotoNextSetupPart(Button, ModelUpdater):
             return
         last = self.game_setup.active_page + 1 == len(self.game_setup.pages)
         if last:
-            msg = ("Are you finshed setting up?\n"
-                   "The game will start if you confirm.")
+            msg = "Are you finshed setting up?\n" "The game will start if you confirm."
             popup = FinishSetupConfirmation(msg)
             popup.open()
         else:
-            msg = ("Are you sure you want to continue?\n"
-                   "You cannot adjust these animals after.")
+            msg = "Are you sure you want to continue?\n" "You cannot adjust these animals after."
             popup = NextSetupPageConfirmation(msg)
             popup.open()
 

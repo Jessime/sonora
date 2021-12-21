@@ -1,8 +1,8 @@
 from kivy.uix.button import Button
 from loguru import logger
 
-from sonora.static import SonoraColor
 from sonora.buttons_dir.updater import ModelUpdater
+from sonora.static import SonoraColor
 
 
 class ConfirmBtn(Button, ModelUpdater):
@@ -42,4 +42,3 @@ class CancelBtn(Button):
 
     def on_press(self):
         self.parent.parent.dismiss()
-

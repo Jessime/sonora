@@ -1,12 +1,13 @@
 from enum import Enum
-from dataclasses import dataclass
+
 from kivy.event import EventDispatcher
 from kivy.properties import StringProperty, ListProperty, ObjectProperty, NumericProperty
-from typing import Optional
+from loguru import logger
+from more_itertools import only
 
 from sonora.static import COLS
 
-# @dataclass
+
 class User(EventDispatcher):
     """Info about the individual playing on this instance of the app."""
     username = StringProperty("")
@@ -123,7 +124,7 @@ class Centipede(Animal):
 
 
 class JavelinaMouth(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/centipede_mouth.png"
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina_mouth.jpeg"
 
 
 class JavelinaHead(Segment):
@@ -131,11 +132,11 @@ class JavelinaHead(Segment):
 
 
 class JavelinaBack(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina_back.png"
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina_back.jpeg"
 
 
 class JavelinaBottom(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina_bottom.png"
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina_bottom.jpeg"
 
 
 class Javelina(Animal):
@@ -168,7 +169,7 @@ class RingtailTail2(Segment):
 
 
 class Ringtail(Animal):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina.jpeg"
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/ringtail.jpeg"
     cls_segments = {
         (0, 0): RingtailHead,
         (0, 1): RingtailBody,
@@ -230,6 +231,17 @@ class GameSetup(EventDispatcher):
     def avail_types(self):
         page = self.pages[self.active_page]
         return page[0].value, page[1].value
+
+    def clear_board_of_active_page(self):
+        avail_types = self.avail_types
+        existing = only((a for a in self.board.animals if isinstance(a, avail_types)))
+        if existing is None:
+            logger.info(f"There's no animal on the board yet.")
+        else:
+            logger.info(f"Removing {existing} from board.")
+            for seg in existing.segments:
+                self.board.grid[(seg.row, seg.col)].obj = None
+            self.board.animals.remove(existing)
 
 
 class Game:

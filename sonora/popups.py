@@ -1,8 +1,8 @@
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
-from sonora.static import SonoraColor
+
+from sonora.buttons_dir.popup_btns import CancelBtn, NextSetupPageConfirmBtn, FinishSetupConfirmBtn
 
 
 class ErrorPopup(Popup):
@@ -14,43 +14,41 @@ class ErrorPopup(Popup):
         self.size_hint = (.5, .5)
 
 
-class ConfirmBtn(Button):
-    def __init__(self, **kwargs):
-        super(ConfirmBtn, self).__init__(**kwargs)
-        self.text = "Confirm"
-        self.background_color = SonoraColor.SONORAN_SAGE.value
-
-    def on_press(self):
-        print('why is this not clicking')
-        self.parent.confirmed = True
-
-
-class CancelBtn(Button):
-    def __init__(self, **kwargs):
-        super(CancelBtn, self).__init__(**kwargs)
-        self.text = "Cancel"
-        self.background_color = SonoraColor.SEDONA_SUNSET.value
-
-    def on_press(self):
-        self.parent.dismiss()
-
-
 class ConfirmationContent(BoxLayout):
     def __init__(self, message, **kwargs):
         super(ConfirmationContent, self).__init__(**kwargs)
         self.orientation = "vertical"
         self.add_widget(Label(text=message))
         self.add_widget(CancelBtn())
-        self.add_widget(ConfirmBtn())
+
+
+class NextSetupPageConfirmationContent(ConfirmationContent):
+    def __init__(self, message, **kwargs):
+        super(NextSetupPageConfirmationContent, self).__init__(message, **kwargs)
+        self.add_widget(NextSetupPageConfirmBtn())
+
+
+class FinishSetupConfirmationContent(ConfirmationContent):
+    def __init__(self, message, **kwargs):
+        super(FinishSetupConfirmationContent, self).__init__(message, **kwargs)
+        self.add_widget(FinishSetupConfirmBtn())
 
 
 class ConfirmationPopup(Popup):
-    def __init__(self, message, **kwargs):
+    def __init__(self, **kwargs):
         super(ConfirmationPopup, self).__init__(**kwargs)
         self.title = "WARNING"
         self.title_align = "center"
-        # self.content = Label(text=message)
         self.size_hint = (.5, .5)
-        self.confirmed = False
-        self.content = ConfirmationContent(message)
 
+
+class NextSetupPageConfirmation(ConfirmationPopup):
+    def __init__(self, message, **kwargs):
+        super(NextSetupPageConfirmation, self).__init__(**kwargs)
+        self.add_widget(NextSetupPageConfirmationContent(message))
+
+
+class FinishSetupConfirmation(ConfirmationPopup):
+    def __init__(self, message, **kwargs):
+        super(FinishSetupConfirmation, self).__init__(**kwargs)
+        self.add_widget(FinishSetupConfirmationContent(message))

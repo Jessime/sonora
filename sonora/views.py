@@ -75,6 +75,7 @@ class SetupLeftUpper(BoxLayout, ModelViewer):
         self.animal_button = AnimalButton(self.game_setup.pages[self.game_setup.active_page][0])
         self.add_widget(self.animal_button)
         set_background_color(self, SonoraColor.MOUSE_FUR)
+        self.game_setup.bind(active_page=self.update_animal_button)
 
     def update_animal_button(self, instance, n):
         self.remove_widget(self.animal_button)
@@ -88,6 +89,7 @@ class SetupLeftLower(BoxLayout, ModelViewer):
         self.animal_button = AnimalButton(self.game_setup.pages[self.game_setup.active_page][1])
         self.add_widget(self.animal_button)
         set_background_color(self, SonoraColor.MOUSE_FUR)
+        self.game_setup.bind(active_page=self.update_animal_button)
 
     def update_animal_button(self, instance, n):
         self.remove_widget(self.animal_button)

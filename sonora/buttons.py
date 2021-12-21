@@ -2,13 +2,13 @@ from kivy.app import App
 from kivy.uix.button import Button
 from kivy.uix.image import Image
 from kivy.uix.behaviors import ButtonBehavior
-from kivy.properties import ColorProperty
 from loguru import logger
 import bcrypt
 import anvil.server
 from more_itertools import only
 
-from sonora.popups import ConfirmationPopup, ErrorPopup
+from sonora.buttons_dir.updater import ModelUpdater
+from sonora.popups import NextSetupPageConfirmation, FinishSetupConfirmation, ErrorPopup
 from sonora.static import SonoraColor, COLS
 
 
@@ -17,30 +17,6 @@ def switch_to_screen(new_screen, direction="left"):
     screen_manager = App.get_running_app().sm
     screen_manager.transition.direction = direction
     screen_manager.current = new_screen
-
-
-class ModelUpdater:
-    """This class conveniently holds the models for the app.
-
-    It also provides a consistent interface through which Buttons can update models.
-    Don't add this class directly to any widgets. Subclass it.
-
-    Buttons are responsible for overriding the `update_model` method.
-    """
-
-    def __init__(self, **kwargs):
-        super(ModelUpdater, self).__init__(**kwargs)
-        # If you have another model besides User
-        # models = namedtuple("Models", ["user", "games"])
-        # self.models = models(root.user, root.games)
-        app = App.get_running_app()
-        self.user = app.user
-        self.animal_types = app.animal_types
-        self.game_setup = app.game_setup
-
-    def update_model(self, **kwargs):
-        """Override in children as the entrypoint to modifying the models"""
-        raise NotImplemented
 
 
 class SetupBoardBtn(Button, ModelUpdater):
@@ -64,7 +40,11 @@ class SetupBoardBtn(Button, ModelUpdater):
                 abs_col = COLS[COLS.find(self.col) + rel_col]
             except IndexError:
                 return False
-            if (abs_row, abs_col) not in self.game_setup.board.grid:
+            out_of_bounds = (abs_row, abs_col) not in self.game_setup.board.grid
+            if out_of_bounds:
+                return False
+            occupied = self.game_setup.board.grid[(abs_row, abs_col)].obj is not None
+            if occupied:
                 return False
         return True
 
@@ -101,15 +81,7 @@ class SetupBoardBtn(Button, ModelUpdater):
            If so, remove that animal from the board, then place the new one.
            (If it's the same animal, this results in a 'move'.)
         """
-        avail_types = self.game_setup.avail_types
-        existing = only((a for a in self.game_setup.board.animals if isinstance(a, avail_types)))
-        if existing is None:
-            logger.info(f"There's no animal on the board yet.")
-        else:
-            logger.info(f"Removing {existing} from board.")
-            for seg in existing.segments:
-                self.game_setup.board.grid[(seg.row, seg.col)].obj = None
-            self.game_setup.board.animals.remove(existing)
+        self.game_setup.clear_board_of_active_page()
         logger.info(f"Placing {new_animal}.")
         for seg in new_animal.segments:
             self.game_setup.board.grid[(seg.row, seg.col)].obj = seg
@@ -136,6 +108,13 @@ class AnimalButton(ButtonBehavior, Image, ModelUpdater):
         self.source = self.animal_type.img
 
     def update_model(self, select=True):
+        """'Activate' a particular animal to place on the board.
+
+        Go ahead and clear an existing animal from the page first.
+        That way, when the logic bound to the `selected_animal_type` is triggered,
+        everything is calculated on a clean board.
+        """
+        self.game_setup.clear_board_of_active_page()
         self.game_setup.selected_animal_type = self.animal_type if select else None
 
     def on_press(self):
@@ -295,15 +274,17 @@ class GotoNextSetupPart(Button, ModelUpdater):
             msg = "You must place an animal before continuing."
             ErrorPopup(message=msg).open()
             return
-        msg = ("Are you sure you want to continue?\n"
-               "You cannot adjust these animals after.")
-        popup = ConfirmationPopup(msg)
-        popup.open()
-        print(f"{popup.confirmed=}")
-        if popup.confirmed:
-            self.update_model()
-            visible_animals = self.game_setup.pages[self.game_setup.active_page]
-            logger.info(f"Now placing: {visible_animals}")
+        last = self.game_setup.active_page + 1 == len(self.game_setup.pages)
+        if last:
+            msg = ("Are you finshed setting up?\n"
+                   "The game will start if you confirm.")
+            popup = FinishSetupConfirmation(msg)
+            popup.open()
+        else:
+            msg = ("Are you sure you want to continue?\n"
+                   "You cannot adjust these animals after.")
+            popup = NextSetupPageConfirmation(msg)
+            popup.open()
 
 
 class ResetSetup(Button):

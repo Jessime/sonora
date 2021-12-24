@@ -1,8 +1,8 @@
 from kivy.uix.button import Button
 from loguru import logger
 
-from sonora.buttons_dir.updater import ModelUpdater
-from sonora.static import SonoraColor
+from sonora.buttons_dir.updater import ModelUpdater, switch_to_screen
+from sonora.static import SonoraColor, SetupStatus
 
 
 class ConfirmBtn(Button, ModelUpdater):
@@ -29,9 +29,18 @@ class FinishSetupConfirmBtn(ConfirmBtn):
     def __init__(self, **kwargs):
         super(FinishSetupConfirmBtn, self).__init__(**kwargs)
 
+    def update_model(self, **kwargs):
+        self.game.notify_of_setup_finished()
+        self.game.board = self.game_setup.board
+
     def on_press(self):
-        logger.info("Finishing setup stage!!")
+        logger.info("Finalizing setup stage!!")
+        self.update_model()
         self.dismiss_popup()
+        if self.game.setup_status == SetupStatus.COMPLETE:
+            switch_to_screen("game")
+        else:
+            switch_to_screen("home", "right")
 
 
 class CancelBtn(Button):

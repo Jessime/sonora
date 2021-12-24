@@ -1,4 +1,12 @@
 from kivy.app import App
+from loguru import logger
+
+
+def switch_to_screen(new_screen, direction="left"):
+    logger.info(f"Switching to {new_screen}")
+    screen_manager = App.get_running_app().sm
+    screen_manager.transition.direction = direction
+    screen_manager.current = new_screen
 
 
 class ModelUpdater:
@@ -19,6 +27,7 @@ class ModelUpdater:
         self.user = app.user
         self.animal_types = app.animal_types
         self.game_setup = app.game_setup
+        self.game = app.game
 
     def update_model(self, **kwargs):
         """Override in children as the entrypoint to modifying the models"""

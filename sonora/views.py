@@ -21,6 +21,7 @@ from sonora.buttons import (
     ResumeGameBtn,
     SetupBoardBtn,
 )
+# from sonora.popups import IsFirstPlayer, IsSecondPlayer
 from sonora.static import COLS, SonoraColor
 
 
@@ -50,7 +51,8 @@ class ModelViewer:
         self.user = app.user
         self.animal_types = app.animal_types
         self.game_setup = app.game_setup
-        # If I actually run into a bug based on this, I'll figure out enforcement
+        self.game = app.game
+        # If I actually run into a bug based on this, I'll figure out enforcement around "View Only"
 
 
 class NextOrReset(GridLayout):
@@ -170,7 +172,7 @@ class SetupMain(GridLayout):
         self.add_widget(SetupRight())
 
 
-class SetupGameScreen(Screen):
+class SetupGameScreen(Screen, ModelViewer):
     """Choose your board settings for the beginning of the game.
 
     Note: leaving this screen while in progress will wipe everything.
@@ -186,6 +188,11 @@ class SetupGameScreen(Screen):
         self.layout.add_widget(SetupHeader())
         self.layout.add_widget(SetupMain())
         self.layout.add_widget(NextOrReset())
+    #     self.game_setup.bind(is_first_player=self.show_finalized_setup_popup)
+    #
+    # def show_finalized_setup_popup(self):
+    #     popup = IsFirstPlayer if self.game_setup.is_first_player else IsSecondPlayer
+    #     popup().open()
 
 
 class CreateGameScreen(Screen):
@@ -231,10 +238,8 @@ class ActiveGames(GridLayout, ModelViewer):
         self.user.bind(game_rows=self.update_game_buttons)
 
     def update_game_buttons(self, arg1, arg2):
-        print(f"{arg1=}, {arg2=}")
-        for game in self.user.game_rows:
-            opponent = game["player1"] if game["player1"]["username"] == self.user.username else game["player2"]
-            game_btn = ResumeGameBtn(opponent["username"], game["status"])
+        for game_row in self.user.game_rows:
+            game_btn = ResumeGameBtn(game_row)
             self.add_widget(game_btn)
 
 

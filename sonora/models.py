@@ -1,11 +1,11 @@
 from enum import Enum
 
 from kivy.event import EventDispatcher
-from kivy.properties import ListProperty, NumericProperty, ObjectProperty, StringProperty
+from kivy.properties import BooleanProperty, ListProperty, NumericProperty, ObjectProperty, StringProperty
 from loguru import logger
 from more_itertools import only
 
-from sonora.static import COLS
+from sonora.static import COLS, SetupStatusInternal, SetupStatus, Status
 
 
 class User(EventDispatcher):
@@ -198,7 +198,6 @@ class Square(EventDispatcher):
     1. It's how Battleship does it.
     2. There's no good way to represent multiple objects on a square at the same time.
     """
-
     obj = ObjectProperty(allownone=True)
 
     def __repr__(self):
@@ -223,6 +222,7 @@ class Board:
 class GameSetup(EventDispatcher):
     selected_animal_type = ObjectProperty(None, allownone=True)
     active_page = NumericProperty()
+    is_first_player = BooleanProperty(False)
     pages: tuple[tuple[AnimalTypes]] = (
         (AnimalTypes.SNAKE, AnimalTypes.CENTIPEDE),
         (AnimalTypes.JAVELINA, AnimalTypes.RINGTAIL),
@@ -247,8 +247,58 @@ class GameSetup(EventDispatcher):
 
 
 class Game:
-    def __init__(self, player1, player2):
-        self.player1 = player1
-        self.player2 = player2
-        self.status = "SETUP"
-        self.board = Board()  # TODO Do I want to make this here or pass it from the setup? :shrug:
+    """Translation layer between the DB representation and the players.
+
+    Most importantly, there's only one game representation.
+    But, each player wants to view the game as "theirs".
+    And the other player should be the "opponent".
+
+    It would be inefficient to store two copies of this data.
+    (And maybe equally confusing).
+    This class allows each player to have their own view of the game,
+    while running off of the same database data.
+    """
+    def __init__(self, db_rep, user):
+        self.db_rep = db_rep
+        self.you_are_p1 = db_rep["player1"]["username"] == user.username
+        self.opponent = (db_rep["player2"] if self.you_are_p1 else db_rep["player1"])["username"]
+
+    @property
+    def setup_status(self):
+        if self.db_rep["setup_status"] == SetupStatus.NEITHER.value:
+            return SetupStatus.NEITHER
+        if self.db_rep["setup_status"] == SetupStatus.COMPLETE.value:
+            return SetupStatus.COMPLETE
+        just_you_done = self.db_rep["setup_status"] == SetupStatusInternal.PLAYER1.value and self.you_are_p1
+        if just_you_done:
+            return SetupStatus.YOU_DONE_OPP_NOT
+        return SetupStatus.OPP_DONE_YOU_NOT
+
+    @setup_status.setter
+    def setup_status(self, new):
+        self.db_rep["setup_status"] = new.value
+
+    @property
+    def status(self):
+        return
+
+    @status.setter
+    def status(self, new):
+        pass
+
+    @property
+    def board(self):
+        return
+
+    @board.setter
+    def board(self, new):
+        pass
+
+    def notify_of_setup_finished(self):
+        if self.setup_status == SetupStatus.NEITHER and self.you_are_p1:
+            self.setup_status = SetupStatusInternal.PLAYER1
+        elif self.setup_status == SetupStatus.NEITHER and not self.you_are_p1:
+            self.setup_status = SetupStatusInternal.PLAYER2
+        else:
+            self.setup_status = SetupStatus.COMPLETE
+

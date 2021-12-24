@@ -10,3 +10,21 @@ class SonoraColor(Enum):
     SONORAN_SAGE = (0.6235, 0.7412, 0.6471, 1)
     SEDONA_SUNSET = (0.7725, 0.2902, 0.2902, 1)
     MOUSE_FUR = (0.8392, 0.8078, 0.7882, 1)
+
+
+class SetupStatusInternal(Enum):
+    PLAYER1 = "PLAYER1"
+    PLAYER2 = "PLAYER2"
+
+
+class SetupStatus(Enum):
+    NEITHER = "NEITHER"
+    YOU_DONE_OPP_NOT = "YOU_DONE_OPP_NOT"
+    OPP_DONE_YOU_NOT = "OPP_DONE_YOU_NOT"
+    COMPLETE = "COMPLETE"
+
+
+class Status(Enum):
+    SETUP = "SETUP"
+    ACTIVE = "ACTIVE"
+    COMPLETE = "COMPLETE"

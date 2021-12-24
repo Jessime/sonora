@@ -5,6 +5,14 @@ from kivy.uix.popup import Popup
 from sonora.buttons_dir.popup_btns import CancelBtn, FinishSetupConfirmBtn, NextSetupPageConfirmBtn
 
 
+class NotificationPopup(Popup):
+    def __init__(self, **kwargs):
+        super(NotificationPopup, self).__init__(**kwargs)
+        self.title = "Note:"
+        self.title_align = "center"
+        self.size_hint = (0.5, 0.5)
+
+
 class ErrorPopup(Popup):
     def __init__(self, message, **kwargs):
         super(ErrorPopup, self).__init__(**kwargs)
@@ -52,3 +60,20 @@ class FinishSetupConfirmation(ConfirmationPopup):
     def __init__(self, message, **kwargs):
         super(FinishSetupConfirmation, self).__init__(**kwargs)
         self.add_widget(FinishSetupConfirmationContent(message))
+
+#
+# class IsFirstPlayer(NotificationPopup):
+#     def __init__(self, **kwargs):
+#         super(IsFirstPlayer, self).__init__(**kwargs)
+#         msg = "Congratulations! You were chosen to be the first player.\n" "Please take your opening move now."
+#         self.content = Label(text=msg)
+#
+#
+# class IsSecondPlayer(NotificationPopup):
+#     def __init__(self, **kwargs):
+#         super(IsSecondPlayer, self).__init__(**kwargs)
+#         msg = (
+#             "You have been chosen to be the second player.\n"
+#             "We will notify you when your opponent has taken their turn."
+#         )
+#         self.content = Label(text=msg)

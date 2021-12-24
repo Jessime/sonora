@@ -1,7 +1,7 @@
 import anvil.server
 from kivy.app import App
 
-from sonora.models import AnimalTypes, GameSetup, User
+from sonora.models import AnimalTypes, Game, GameSetup, User
 from sonora.static import UPLINK_CLIENT_KEY
 from sonora.views import get_screen_manager
 
@@ -19,12 +19,12 @@ class SonoraApp(App):
         self.user = User()
         self.animal_types = AnimalTypes
         self.game_setup = GameSetup()
-
+        self.game = None
         self.sm = get_screen_manager()
 
         # temp code
         from sonora.buttons import LoginBtn
 
-        LoginBtn().login("jk", "bad")
+        # LoginBtn().login("jk", "bad")
 
         return self.sm

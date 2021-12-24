@@ -1,22 +1,15 @@
 import anvil.server
 import bcrypt
-from kivy.app import App
 from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.button import Button
 from kivy.uix.image import Image
 from loguru import logger
 from more_itertools import only
 
-from sonora.buttons_dir.updater import ModelUpdater
+from sonora.buttons_dir.updater import ModelUpdater, switch_to_screen
 from sonora.popups import ErrorPopup, FinishSetupConfirmation, NextSetupPageConfirmation
 from sonora.static import COLS, SonoraColor
-
-
-def switch_to_screen(new_screen, direction="left"):
-    logger.info(f"Switching to {new_screen}")
-    screen_manager = App.get_running_app().sm
-    screen_manager.transition.direction = direction
-    screen_manager.current = new_screen
+from sonora.models import Game, Status, SetupStatus
 
 
 class SetupBoardBtn(Button, ModelUpdater):
@@ -126,13 +119,29 @@ class AnimalButton(ButtonBehavior, Image, ModelUpdater):
             self.update_model()
 
 
-class ResumeGameBtn(Button):
-    def __init__(self, opponent, status, **kwargs):
+class ResumeGameBtn(Button, ModelUpdater):
+    def __init__(self, game_row, **kwargs):
         super(ResumeGameBtn, self).__init__(**kwargs)
-        self.text = f"Resume Game with {opponent}.\n(Status: {status})"
+        self.game_for_btn = Game(game_row, self.user)  # Don't assign to self.game quite yet
+        self.text = (f"Resume Game with {self.game_for_btn.opponent}.\n"
+                     f"(Status: {self.game_for_btn.status})")
+
+    def update_model(self):
+        self.game = self.game_for_btn
 
     def on_press(self):
-        switch_to_screen("setup_game")
+        if self.game_for_btn.setup_status == SetupStatus.YOU_DONE_OPP_NOT:
+            msg = ("You've already completed setup.\n"
+                   f"Waiting on {self.game_for_btn.opponent} to finish.")
+            ErrorPopup(msg).open()
+        elif self.game_for_btn.setup_status in (SetupStatus.OPP_DONE_YOU_NOT, SetupStatus.NEITHER):
+            self.update_model()
+            logger.info(f"Resuming game setup")
+            switch_to_screen("setup_game")
+        else:
+            self.update_model()
+            logger.info(f"Resuming game with {self.game.opponent}")
+            switch_to_screen("game")
 
 
 class CreateGameBtn(Button, ModelUpdater):
@@ -276,7 +285,7 @@ class GotoNextSetupPart(Button, ModelUpdater):
             return
         last = self.game_setup.active_page + 1 == len(self.game_setup.pages)
         if last:
-            msg = "Are you finshed setting up?\n" "The game will start if you confirm."
+            msg = "Are you finished setting up?\n" "The game will start if you confirm."
             popup = FinishSetupConfirmation(msg)
             popup.open()
         else:

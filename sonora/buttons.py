@@ -161,8 +161,7 @@ class CreateGameBtn(Button, ModelUpdater):
             ErrorPopup(message=error).open()
 
         logger.info(f"Creating a new game with {opponent_name}")
-
-        # switch_to_screen
+        switch_to_screen("setup_game")
 
 
 class GotoCreateGameBtn(Button):
@@ -231,7 +230,7 @@ class LoginBtn(Button, ModelUpdater):
         correct_pass = bcrypt.checkpw(password, bytes(pass_hash, encoding="utf-8"))
         if correct_pass:
             logger.info(f"{username} successfully logged in")
-            games = anvil.server.call("get_games", "jk")
+            games = anvil.server.call("get_games", username)
             logger.info(f"Found {len(games)} games.")
             self.update_model(username, games)
             switch_to_screen("user_home")

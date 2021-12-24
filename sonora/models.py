@@ -171,7 +171,7 @@ class RingtailTail2(Segment):
 
 
 class Ringtail(Animal):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/ringtail.jpeg"
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/ringtail.png"
     cls_segments = {
         (0, 0): RingtailHead,
         (0, 1): RingtailBody,

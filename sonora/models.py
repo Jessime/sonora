@@ -104,7 +104,7 @@ class Animal:
         new = cls(**db_rep["params"])
         segments = []
         for seg_data in db_rep["attrs"]["segments"]:
-            new_seg = globals()[seg_data["class"]].deserialize()
+            new_seg = globals()[seg_data["class"]].deserialize(seg_data)
             segments.append(new_seg)
         setattr(new, "segments", segments)
         return new

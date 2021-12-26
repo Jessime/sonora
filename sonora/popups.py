@@ -61,6 +61,7 @@ class FinishSetupConfirmation(ConfirmationPopup):
         super(FinishSetupConfirmation, self).__init__(**kwargs)
         self.add_widget(FinishSetupConfirmationContent(message))
 
+
 #
 # class IsFirstPlayer(NotificationPopup):
 #     def __init__(self, **kwargs):

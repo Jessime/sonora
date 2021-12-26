@@ -7,9 +7,9 @@ from loguru import logger
 from more_itertools import only
 
 from sonora.buttons_dir.updater import ModelUpdater, switch_to_screen
+from sonora.models import Game, SetupStatus, Status
 from sonora.popups import ErrorPopup, FinishSetupConfirmation, NextSetupPageConfirmation
 from sonora.static import COLS, SonoraColor
-from sonora.models import Game, Status, SetupStatus
 
 
 class SetupBoardBtn(Button, ModelUpdater):
@@ -122,17 +122,16 @@ class AnimalButton(ButtonBehavior, Image, ModelUpdater):
 class ResumeGameBtn(Button, ModelUpdater):
     def __init__(self, game_row, **kwargs):
         super(ResumeGameBtn, self).__init__(**kwargs)
-        self.game_for_btn = Game(game_row, self.user)  # Don't assign to self.game quite yet
-        self.text = (f"Resume Game with {self.game_for_btn.opponent}.\n"
-                     f"(Status: {self.game_for_btn.status})")
+        self.game_for_btn = Game(game_row, self.user)  # Don't populate `self.game` quite yet
+        self.text = f"Resume Game with {self.game_for_btn.opponent}.\n" f"(Status: {self.game_for_btn.status.value})"
 
     def update_model(self):
-        self.game = self.game_for_btn
+        """Populate the "global" `self.game`"""
+        self.game.__init__(self.game_for_btn.db_rep, self.user)
 
     def on_press(self):
         if self.game_for_btn.setup_status == SetupStatus.YOU_DONE_OPP_NOT:
-            msg = ("You've already completed setup.\n"
-                   f"Waiting on {self.game_for_btn.opponent} to finish.")
+            msg = "You've already completed setup.\n" f"Waiting on {self.game_for_btn.opponent} to finish."
             ErrorPopup(msg).open()
         elif self.game_for_btn.setup_status in (SetupStatus.OPP_DONE_YOU_NOT, SetupStatus.NEITHER):
             self.update_model()
@@ -151,17 +150,21 @@ class CreateGameBtn(Button, ModelUpdater):
         self.text = "Create Game"
         self.background_color = SonoraColor.SONORAN_SAGE.value
 
+    def update_model(self, game_row, **kwargs):
+        self.user.game_rows = [game_row]
+
     def on_press(self):
         opponent_name = self.parent.parent.username.text
         if self.user.username == opponent_name:
             ErrorPopup(message="You cannot start a game with yourself.").open()
             return
-        error = anvil.server.call("create_game", self.user.username, opponent_name)
-        if error is not None:
-            ErrorPopup(message=error).open()
-
+        row_or_err = anvil.server.call("create_game", self.user.username, opponent_name)
+        if isinstance(row_or_err, str):
+            ErrorPopup(message=row_or_err).open()
+            return
         logger.info(f"Creating a new game with {opponent_name}")
-        switch_to_screen("setup_game")
+        self.update_model(row_or_err)
+        ResumeGameBtn(row_or_err).on_press()
 
 
 class GotoCreateGameBtn(Button):

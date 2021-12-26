@@ -1,12 +1,14 @@
 import os
+import pickle
+from gzip import compress
 from random import choice
 
 import anvil.server
 import anvil.tables.query as q
+from anvil import BlobMedia
 from anvil.tables import app_tables
 
-from sonora.static import Status, SetupStatus
-
+from sonora.static import SetupStatus, Status
 
 anvil.server.connect(os.environ["SONORA_UPLINK_KEY"])
 
@@ -39,9 +41,11 @@ def create_game(username, opponent_name):
     if existing_game is not None:
         return "A game between you and this player already exists."
 
-    app_tables.games.add_row(
+    return app_tables.games.add_row(
         player1=user,
         player2=opponent,
+        player1_board=BlobMedia("text/plain", compress(pickle.dumps(None))),
+        player2_board=BlobMedia("text/plain", compress(pickle.dumps(None))),
         status=Status.SETUP.value,
         setup_status=SetupStatus.NEITHER.value,
         turn=choice((user, opponent)),

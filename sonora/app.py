@@ -19,12 +19,13 @@ class SonoraApp(App):
         self.user = User()
         self.animal_types = AnimalTypes
         self.game_setup = GameSetup()
-        self.game = None
+        self.game = Game()
         self.sm = get_screen_manager()
 
         # temp code
-        from sonora.buttons import LoginBtn
+        from sonora.buttons import LoginBtn, ResumeGameBtn
 
-        # LoginBtn().login("jk", "bad")
+        LoginBtn().login("jk", "bad")
+        # ResumeGameBtn(self.user.game_rows[0]).on_press()
 
         return self.sm

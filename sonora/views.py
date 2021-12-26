@@ -21,6 +21,7 @@ from sonora.buttons import (
     ResumeGameBtn,
     SetupBoardBtn,
 )
+
 # from sonora.popups import IsFirstPlayer, IsSecondPlayer
 from sonora.static import COLS, SonoraColor
 
@@ -188,6 +189,7 @@ class SetupGameScreen(Screen, ModelViewer):
         self.layout.add_widget(SetupHeader())
         self.layout.add_widget(SetupMain())
         self.layout.add_widget(NextOrReset())
+
     #     self.game_setup.bind(is_first_player=self.show_finalized_setup_popup)
     #
     # def show_finalized_setup_popup(self):

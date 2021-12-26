@@ -1,11 +1,14 @@
+import pickle
 from enum import Enum
+from gzip import compress, decompress
 
+from anvil import BlobMedia
 from kivy.event import EventDispatcher
 from kivy.properties import BooleanProperty, ListProperty, NumericProperty, ObjectProperty, StringProperty
 from loguru import logger
 from more_itertools import only
 
-from sonora.static import COLS, SetupStatusInternal, SetupStatus, Status
+from sonora.static import COLS, SetupStatus, SetupStatusInternal, Status
 
 
 class User(EventDispatcher):
@@ -28,6 +31,7 @@ class Segment:
     def __init__(self, row, col):
         self.row = row
         self.col = col
+
         self.shot = False
 
     def __repr__(self):
@@ -41,6 +45,21 @@ class Segment:
     @loc.setter
     def loc(self, value):
         self.row, self.col = value
+
+    def serialize(self):
+        self_data = {
+            "class": self.__class__.__name__,
+            "params": {"row": self.row, "col": self.col},
+            "attrs": {"shot": self.shot},
+        }
+        return self_data
+
+    @classmethod
+    def deserialize(cls, db_rep):
+        new = cls(**db_rep["params"])
+        for name, value in db_rep["attrs"].items():
+            setattr(new, name, value)
+        return new
 
 
 class Animal:
@@ -66,6 +85,29 @@ class Animal:
             seg = seg_cls(abs_row, abs_col)
             segments.append(seg)
         return segments
+
+    def serialize(self):
+        self_data = {
+            "class": self.__class__.__name__,
+            "params": {
+                "base_row": self.base_row,
+                "base_col": self.base_col,
+            },
+            "attrs": {
+                "segments": [seg.serialize() for seg in self.segments],
+            },
+        }
+        return self_data
+
+    @classmethod
+    def deserialize(cls, db_rep):
+        new = cls(**db_rep["params"])
+        segments = []
+        for seg_data in db_rep["attrs"]["segments"]:
+            new_seg = globals()[seg_data["class"]].deserialize()
+            segments.append(new_seg)
+        setattr(new, "segments", segments)
+        return new
 
 
 class SnakeHead(Segment):
@@ -198,6 +240,7 @@ class Square(EventDispatcher):
     1. It's how Battleship does it.
     2. There's no good way to represent multiple objects on a square at the same time.
     """
+
     obj = ObjectProperty(allownone=True)
 
     def __repr__(self):
@@ -217,8 +260,31 @@ class Board:
                 grid[(i, letter)] = Square()
         return grid
 
+    @classmethod
+    def deserialize(cls, db_rep):
 
-# @dataclass
+        pkl = pickle.loads(decompress(db_rep.get_bytes()))
+        if pkl is None:
+            return cls()  # TODO this might be buggy :shrug:
+        new = cls()
+        animals = [globals()[animal["class"]].deserialize(animal) for animal in pkl]
+        setattr(new, "animals", animals)
+
+        for animal in animals:
+            for seg in animal.segments:
+                new.grid[(seg.row, seg.col)].obj = seg
+        return new
+
+    def serialize(self):
+        """Represent the board in a json serializable format
+
+        Importantly, `grid` and `animals` are mostly duplicate data.
+        Serializing the animals is enough to reconstruct everything later.
+        """
+        simple_board = [animal.serialize() for animal in self.animals]
+        return simple_board
+
+
 class GameSetup(EventDispatcher):
     selected_animal_type = ObjectProperty(None, allownone=True)
     active_page = NumericProperty()
@@ -257,11 +323,28 @@ class Game:
     (And maybe equally confusing).
     This class allows each player to have their own view of the game,
     while running off of the same database data.
+    ---
+
+
     """
-    def __init__(self, db_rep, user):
+
+    _instance_count = 0
+
+    def __init__(self, db_rep=None, user=None):
+        Game._instance_count += 1
+        if db_rep is None or user is None:
+            if Game._instance_count == 1:
+                logger.info("Created first (and only temporarily empty) Game instance")
+                return
+            err_msg = "Only the initial/global instance is allowed to be unpopulated on instantiation."
+            raise ValueError(err_msg)
+        logger.info(f"Created game instance #{self._instance_count}")
         self.db_rep = db_rep
+
         self.you_are_p1 = db_rep["player1"]["username"] == user.username
+        self.board_column = "player1_board" if self.you_are_p1 else "player2_board"
         self.opponent = (db_rep["player2"] if self.you_are_p1 else db_rep["player1"])["username"]
+        self._board = Board.deserialize(db_rep[self.board_column])
 
     @property
     def setup_status(self):
@@ -280,7 +363,7 @@ class Game:
 
     @property
     def status(self):
-        return
+        return Status[self.db_rep["status"]]
 
     @status.setter
     def status(self, new):
@@ -288,11 +371,18 @@ class Game:
 
     @property
     def board(self):
-        return
+        return self._board
 
     @board.setter
     def board(self, new):
-        pass
+        self._board = new
+        self.commit_board()
+
+    def commit_board(self):
+        logger.info("Committing board:")
+        simple_board = self._board.serialize()
+        logger.info(str(simple_board))
+        self.db_rep[self.board_column] = BlobMedia("text/plain", compress(pickle.dumps(simple_board)))
 
     def notify_of_setup_finished(self):
         if self.setup_status == SetupStatus.NEITHER and self.you_are_p1:
@@ -301,4 +391,3 @@ class Game:
             self.setup_status = SetupStatusInternal.PLAYER2
         else:
             self.setup_status = SetupStatus.COMPLETE
-

@@ -23,6 +23,10 @@ class User(EventDispatcher):
         return self.username
 
 
+class Miss:
+    pass
+
+
 class Segment:
     """A single square of an Animal"""
 
@@ -312,7 +316,7 @@ class GameSetup(EventDispatcher):
             self.board.animals.remove(existing)
 
 
-class Game:
+class GameOLD:
     """Translation layer between the DB representation and the players.
 
     Most importantly, there's only one game representation.
@@ -331,14 +335,14 @@ class Game:
     _instance_count = 0
 
     def __init__(self, db_rep=None, user=None):
-        Game._instance_count += 1
+        GameOLD._instance_count += 1
         if db_rep is None or user is None:
-            if Game._instance_count == 1:
+            if GameOLD._instance_count == 1:
                 logger.info("Created first (and only temporarily empty) Game instance")
                 return
             err_msg = "Only the initial/global instance is allowed to be unpopulated on instantiation."
             raise ValueError(err_msg)
-        logger.info(f"Created game instance #{self._instance_count}")
+        logger.info(f"Created game instance #{GameOLD._instance_count}")
         self.db_rep = db_rep
 
         self.you_are_p1 = db_rep["player1"]["username"] == user.username
@@ -367,7 +371,7 @@ class Game:
 
     @status.setter
     def status(self, new):
-        pass
+        self.db_rep["status"] = new.value
 
     @property
     def board(self):
@@ -391,3 +395,39 @@ class Game:
             self.setup_status = SetupStatusInternal.PLAYER2
         else:
             self.setup_status = SetupStatus.COMPLETE
+
+
+class Game(EventDispatcher):
+    _instance_count = 0
+    db_rep = ObjectProperty()
+    you_are_p1 = BooleanProperty(defaultvalue=None)
+    board_column = StringProperty()
+    opponent = StringProperty()
+    board = ObjectProperty()
+    setup_status = ObjectProperty()
+    status = ObjectProperty()
+    your_turn = BooleanProperty(defaultvalue=None)
+
+    def __init__(self, db_rep=None, user=None, **kwargs):
+        super(Game, self).__init__(**kwargs)
+        Game._instance_count += 1
+        logger.info(f"Called Game __init__ {Game._instance_count} times.")
+        if db_rep is None or user is None:
+            if Game._instance_count == 1:
+                logger.info("Created first (and only temporarily empty) Game instance")
+                return
+            err_msg = "Only the initial/global instance is allowed to be unpopulated on instantiation."
+            raise ValueError(err_msg)
+        self.db_rep = db_rep
+        self.you_are_p1 = db_rep["player1"]["username"] == user.username
+        self.board_column = "player1_board" if self.you_are_p1 else "player2_board"
+        self.opponent = (db_rep["player2"] if self.you_are_p1 else db_rep["player1"])["username"]
+        self.board = Board.deserialize(db_rep[self.board_column])
+        self.setup_status = SetupStatus[self.db_rep["setup_status"]]
+        self.status = Status[self.db_rep["status"]]
+        self.your_turn = self.db_rep["turn"]["username"] == user.username
+        self.bind(setup_status=self.commit_setup_status_to_db)
+
+    def commit_setup_status_to_db(self, new):
+        print(new)
+        1/0

@@ -7,9 +7,42 @@ from loguru import logger
 from more_itertools import only
 
 from sonora.buttons_dir.updater import ModelUpdater, switch_to_screen
-from sonora.models import Game, SetupStatus, Status
+from sonora.models import Game, SetupStatus
 from sonora.popups import ErrorPopup, FinishSetupConfirmation, NextSetupPageConfirmation
 from sonora.static import COLS, SonoraColor
+
+
+class YourBoardBtn(Button, ModelUpdater):
+    """Note: Unless we start adding powers to the animals, this button doesn't do anything."""
+    def __init__(self, row, col, **kwargs):
+        super(YourBoardBtn, self).__init__(**kwargs)
+        self.row = row
+        self.col = col
+        self.text = f"{col}{str(row)}"
+
+        # self.background_normal = self.game.board.grid[(self.row, self.col)].obj.img
+        # self.square = self.game_setup.board.grid[(self.row, self.col)]
+        # self.square.bind(obj=self.update_bg_img)
+
+        self.game.bind(board=self.finish_init_after_board_load)
+
+    def finish_init_after_board_load(self, instance, board):
+        self.square = board.grid[(self.row, self.col)]
+        self.square.bind(obj=self.update_bg_img)
+        # This needs to exist since the square changed before the binding.
+        self.update_bg_img(None, self.square.obj)
+
+    def update_bg_img(self, instance, obj):
+        """
+        Note: This is very similar, but not the same as, `SetupBoardBtn`.
+        """
+        default = "atlas://data/images/defaulttheme/button"
+        if obj is None:
+            self.background_normal = default
+            self.text = f"{self.col}{str(self.row)}"
+        else:
+            self.background_normal = obj.img
+            self.text = ""
 
 
 class SetupBoardBtn(Button, ModelUpdater):
@@ -140,7 +173,7 @@ class ResumeGameBtn(Button, ModelUpdater):
         else:
             self.update_model()
             logger.info(f"Resuming game with {self.game.opponent}")
-            switch_to_screen("game")
+            switch_to_screen("your_board")
 
 
 class CreateGameBtn(Button, ModelUpdater):
@@ -261,16 +294,16 @@ class BackHomeScreenBtn(Button):
     def __init__(self, **kwargs):
         super(BackHomeScreenBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
-        self.text = "Back"
+        self.text = "Back to Home"
         self.background_color = SonoraColor.SEDONA_SUNSET.value
 
     def on_press(self):
         switch_to_screen("user_home", "right")
 
 
-class GotoNextSetupPart(Button, ModelUpdater):
+class GotoNextSetupPartBtn(Button, ModelUpdater):
     def __init__(self, **kwargs):
-        super(GotoNextSetupPart, self).__init__(**kwargs)
+        super(GotoNextSetupPartBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
         self.text = "Next"
         self.background_color = SonoraColor.SONORAN_SAGE.value
@@ -296,9 +329,9 @@ class GotoNextSetupPart(Button, ModelUpdater):
             popup.open()
 
 
-class ResetSetup(Button):
+class ResetSetupBtn(Button):
     def __init__(self, **kwargs):
-        super(ResetSetup, self).__init__(**kwargs)
+        super(ResetSetupBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
         self.text = "Reset Board Setup"
         self.background_color = SonoraColor.SEDONA_SUNSET.value
@@ -306,3 +339,25 @@ class ResetSetup(Button):
     def on_press(self):
         # TODO raise popup warning/confirmation
         switch_to_screen("setup_game", "right")
+
+
+class GotoOppBoardBtn(Button):
+    def __init__(self, **kwargs):
+        super(GotoOppBoardBtn, self).__init__(**kwargs)
+        self.size_hint = (1, 0.1)
+        self.text = "Opponent's Board"
+        self.background_color = SonoraColor.SONORAN_SAGE.value
+
+    def on_press(self):
+        switch_to_screen("opp_board", "up")
+
+
+class GotoYourBoardBtn(Button):
+    def __init__(self, **kwargs):
+        super(GotoYourBoardBtn, self).__init__(**kwargs)
+        self.size_hint = (1, 0.1)
+        self.text = "Your Board"
+        self.background_color = SonoraColor.SONORAN_SAGE.value
+
+    def on_press(self):
+        switch_to_screen("opp_board", "down")

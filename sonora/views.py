@@ -15,11 +15,13 @@ from sonora.buttons import (
     GotoCreateAccountBtn,
     GotoCreateGameBtn,
     GotoLoginScreenBtn,
-    GotoNextSetupPart,
+    GotoNextSetupPartBtn,
+    GotoOppBoardBtn,
     LoginBtn,
-    ResetSetup,
+    ResetSetupBtn,
     ResumeGameBtn,
     SetupBoardBtn,
+    YourBoardBtn,
 )
 
 # from sonora.popups import IsFirstPlayer, IsSecondPlayer
@@ -43,6 +45,16 @@ def set_background_color(label, color):
     label.bind(size=label.update_rect, pos=label.update_rect)
 
 
+def board_view_generator(button_type):
+    yield Label(text="")
+    for letter in COLS:
+        yield Label(text=letter)
+    for row in range(1, 11):
+        yield Label(text=str(row))
+        for col in COLS:
+            yield button_type(row, col)
+
+
 class ModelViewer:
     """Can be subclassed by any widget that needs to VIEW data."""
 
@@ -56,13 +68,67 @@ class ModelViewer:
         # If I actually run into a bug based on this, I'll figure out enforcement around "View Only"
 
 
+class GameStateHeader(Label, ModelViewer):
+    def __init__(self, **kwargs):
+        super(GameStateHeader, self).__init__(**kwargs)
+        self.color = (0, 0, 0, 1)
+        self.size_hint = (1, 0.1)
+        set_background_color(self, SonoraColor.TERMINAL_PAPER)
+        self.game.bind(your_turn=self.update_text)
+        self.update_text(None, self.game.your_turn)
+
+    def update_rect(self, instance, _):
+        self.background.pos = instance.pos
+        self.background.size = instance.size
+
+    def update_text(self, _, your_turn):
+        if your_turn is None:
+            return
+        turn = "YOUR" if your_turn else "THEIR"
+        msg = (f"Welcome to your game with {self.game.opponent}.\n"
+               f"It is {turn} turn.")
+        self.text = msg
+
+
+class OuterYourBoardArea(GridLayout):
+    def __init__(self, **kwargs):
+        super(OuterYourBoardArea, self).__init__(**kwargs)
+        self.cols = 11
+        # self.size_hint = (1, 0.5)
+        for child in board_view_generator(YourBoardBtn):
+            self.add_widget(child)
+
+
+class ExitOrOppBoard(GridLayout):
+    def __init__(self, **kwargs):
+        super(ExitOrOppBoard, self).__init__(**kwargs)
+        self.cols = 2
+        self.size_hint = (1, 0.1)
+        self.add_widget(BackHomeScreenBtn())
+        self.add_widget(GotoOppBoardBtn())
+
+
+class YourBoardScreen(Screen):
+    """A place where you can see the state of your board."""
+
+    def __init__(self, **kwargs):
+        super(YourBoardScreen, self).__init__(**kwargs)
+        self.name = "your_board"
+        self.layout = BoxLayout(orientation="vertical")
+        self.add_widget(self.layout)
+        self.layout.add_widget(GameStateHeader())
+
+        self.layout.add_widget(OuterYourBoardArea())
+        self.layout.add_widget(ExitOrOppBoard())
+
+
 class NextOrReset(GridLayout):
     def __init__(self, **kwargs):
         super(NextOrReset, self).__init__(**kwargs)
         self.cols = 2
         self.size_hint = (1, 0.1)
-        self.add_widget(ResetSetup())
-        self.add_widget(GotoNextSetupPart())
+        self.add_widget(ResetSetupBtn())
+        self.add_widget(GotoNextSetupPartBtn())
 
 
 class SetupHeader(Label):
@@ -137,22 +203,12 @@ class Instructions(BoxLayout):
         self.add_widget(Label(text=txt, size_hint=(1, 0.8)))
 
 
-def board_view_generator():
-    yield Label(text="")
-    for letter in COLS:
-        yield Label(text=letter)
-    for row in range(1, 11):
-        yield Label(text=str(row))
-        for col in COLS:
-            yield SetupBoardBtn(row, col)
-
-
-class OuterBoardArea(GridLayout):
+class OuterSetupBoardArea(GridLayout):
     def __init__(self, **kwargs):
-        super(OuterBoardArea, self).__init__(**kwargs)
+        super(OuterSetupBoardArea, self).__init__(**kwargs)
         self.cols = 11
         self.size_hint = (1, 0.5)
-        for child in board_view_generator():
+        for child in board_view_generator(SetupBoardBtn):
             self.add_widget(child)
 
 
@@ -161,7 +217,7 @@ class SetupRight(BoxLayout):
         super(SetupRight, self).__init__(**kwargs)
         self.orientation = "vertical"
         self.add_widget(Instructions())
-        self.add_widget(OuterBoardArea())
+        self.add_widget(OuterSetupBoardArea())
 
 
 class SetupMain(GridLayout):
@@ -189,12 +245,6 @@ class SetupGameScreen(Screen, ModelViewer):
         self.layout.add_widget(SetupHeader())
         self.layout.add_widget(SetupMain())
         self.layout.add_widget(NextOrReset())
-
-    #     self.game_setup.bind(is_first_player=self.show_finalized_setup_popup)
-    #
-    # def show_finalized_setup_popup(self):
-    #     popup = IsFirstPlayer if self.game_setup.is_first_player else IsSecondPlayer
-    #     popup().open()
 
 
 class CreateGameScreen(Screen):
@@ -333,4 +383,5 @@ def get_screen_manager():
     sm.add_widget(UserHomeScreen())
     sm.add_widget(CreateGameScreen())
     sm.add_widget(SetupGameScreen())
+    sm.add_widget(YourBoardScreen())
     return sm

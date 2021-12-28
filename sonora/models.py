@@ -43,6 +43,14 @@ class BaseBoardObject:
     def loc(self, value):
         self.row, self.col = value
 
+    def serialize(self):
+        """Represent in a json valid format.
+
+        Note: feel free to override for more complicated objects.
+        """
+        rep = {"class": self.__class__.__name__, "params": {}, "attrs": {}}
+        return rep
+
 
 class Shot(BaseBoardObject):
     """An attempt to take a shot of opponent's animal."""
@@ -290,13 +298,20 @@ class Board:
         pkl = pickle.loads(decompress(db_rep.get_bytes()))
         if pkl is None:
             return cls()  # TODO this might be buggy :shrug:
-        new = cls()
-        animals = [globals()[animal["class"]].deserialize(animal) for animal in pkl]
-        setattr(new, "animals", animals)
 
-        for animal in animals:
-            for seg in animal.segments:
-                new.grid[seg.loc].obj = seg
+        new = cls()
+
+        def find_cls(board_obj):
+            return globals()[board_obj["class"]]
+        contents = [find_cls(board_obj).deserialize(board_obj) for board_obj in pkl]
+        setattr(new, "contents", contents)
+
+        for board_obj in contents:
+            if hasattr(board_obj, "segments"):
+                for seg in board_obj.segments:
+                    new.grid[seg.loc].obj = seg
+            else:
+                new.grid[board_obj.loc].obj = board_obj
         return new
 
     def serialize(self):
@@ -315,7 +330,7 @@ class Board:
             logger.info(f"There are no {types} on the board yet.")
         else:
             logger.info(f"Removing {existing} from board.")
-            if issubclass(existing, Animal):
+            if hasattr(existing, "segments"):
                 for seg in existing.segments:
                     self.grid[seg.loc].obj = None
             else:

@@ -17,9 +17,12 @@ from sonora.buttons import (
     GotoLoginScreenBtn,
     GotoNextSetupPartBtn,
     GotoOppBoardBtn,
+    GotoYourBoardBtn,
     LoginBtn,
+    OppBoardBtn,
     ResetSetupBtn,
     ResumeGameBtn,
+    TakeTurnBtn,
     SetupBoardBtn,
     YourBoardBtn,
 )
@@ -90,22 +93,44 @@ class GameStateHeader(Label, ModelViewer):
         self.text = msg
 
 
+class OuterOppBoardArea(GridLayout):
+    def __init__(self, **kwargs):
+        super(OuterOppBoardArea, self).__init__(**kwargs)
+        self.cols = 11
+        for child in board_view_generator(OppBoardBtn):
+            self.add_widget(child)
+
+
+class GameBtnRow(GridLayout):
+    def __init__(self, other_board_btn, take_action_btn, **kwargs):
+        super(GameBtnRow, self).__init__(**kwargs)
+        self.cols = 3
+        self.size_hint = (1, 0.1)
+        self.add_widget(BackHomeScreenBtn())
+        self.add_widget(other_board_btn())
+        self.add_widget(take_action_btn())
+
+
+class OppBoardScreen(Screen):
+    """A place where you can see the state of your board."""
+
+    def __init__(self, **kwargs):
+        super(OppBoardScreen, self).__init__(**kwargs)
+        self.name = "opp_board"
+        self.layout = BoxLayout(orientation="vertical")
+        self.add_widget(self.layout)
+        self.layout.add_widget(GameStateHeader())
+
+        self.layout.add_widget(OuterOppBoardArea())
+        self.layout.add_widget(GameBtnRow(GotoYourBoardBtn, TakeTurnBtn))
+
+
 class OuterYourBoardArea(GridLayout):
     def __init__(self, **kwargs):
         super(OuterYourBoardArea, self).__init__(**kwargs)
         self.cols = 11
-        # self.size_hint = (1, 0.5)
         for child in board_view_generator(YourBoardBtn):
             self.add_widget(child)
-
-
-class ExitOrOppBoard(GridLayout):
-    def __init__(self, **kwargs):
-        super(ExitOrOppBoard, self).__init__(**kwargs)
-        self.cols = 2
-        self.size_hint = (1, 0.1)
-        self.add_widget(BackHomeScreenBtn())
-        self.add_widget(GotoOppBoardBtn())
 
 
 class YourBoardScreen(Screen):
@@ -119,7 +144,7 @@ class YourBoardScreen(Screen):
         self.layout.add_widget(GameStateHeader())
 
         self.layout.add_widget(OuterYourBoardArea())
-        self.layout.add_widget(ExitOrOppBoard())
+        self.layout.add_widget(GameBtnRow(GotoOppBoardBtn, TakeTurnBtn))
 
 
 class NextOrReset(GridLayout):
@@ -384,4 +409,5 @@ def get_screen_manager():
     sm.add_widget(CreateGameScreen())
     sm.add_widget(SetupGameScreen())
     sm.add_widget(YourBoardScreen())
+    sm.add_widget(OppBoardScreen())
     return sm

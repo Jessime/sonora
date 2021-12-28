@@ -40,7 +40,7 @@ class FinishSetupConfirmBtn(ConfirmBtn, ModelUpdater):
         self.update_model()
         self.dismiss_popup()
         if self.game.setup_status == SetupStatus.COMPLETE:
-            switch_to_screen("game")
+            switch_to_screen("your_board")
         else:
             switch_to_screen("user_home", "right")
 

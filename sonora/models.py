@@ -23,12 +23,8 @@ class User(EventDispatcher):
         return self.username
 
 
-class Miss:
-    pass
-
-
-class Segment:
-    """A single square of an Animal"""
+class BaseBoardObject:
+    """Abstract Parent Class for things that go on the board."""
 
     img = None
 
@@ -36,11 +32,8 @@ class Segment:
         self.row = row
         self.col = col
 
-        self.shot = False
-
     def __repr__(self):
-        temp = f"{self.img=}"
-        return f"[{self.__class__.__name__}: {self.shot=} {temp}]"
+        return f"{self.__class__.__name__}({self.row}, {self.col})"
 
     @property
     def loc(self):
@@ -49,6 +42,29 @@ class Segment:
     @loc.setter
     def loc(self, value):
         self.row, self.col = value
+
+
+class Shot(BaseBoardObject):
+    """An attempt to take a shot of opponent's animal."""
+
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/camera.png"
+
+
+class Hit(BaseBoardObject):
+    pass
+
+
+class Miss(BaseBoardObject):
+    pass
+
+
+class Segment(BaseBoardObject):
+    """A single square of an Animal"""
+
+    def __init__(self, row, col):
+        super(Segment, self).__init__(row, col)
+
+        self.shot = False
 
     def serialize(self):
         self_data = {
@@ -254,7 +270,11 @@ class Square(EventDispatcher):
 class Board:
     def __init__(self):
         self.grid = self.init_grid()
-        self.animals = []
+        self.contents = []
+
+    def __add__(self, board_obj):
+        self.grid[board_obj.loc].obj = board_obj
+        self.contents.append(board_obj)
 
     @staticmethod
     def init_grid():
@@ -276,7 +296,7 @@ class Board:
 
         for animal in animals:
             for seg in animal.segments:
-                new.grid[(seg.row, seg.col)].obj = seg
+                new.grid[seg.loc].obj = seg
         return new
 
     def serialize(self):
@@ -285,11 +305,26 @@ class Board:
         Importantly, `grid` and `animals` are mostly duplicate data.
         Serializing the animals is enough to reconstruct everything later.
         """
-        simple_board = [animal.serialize() for animal in self.animals]
+        simple_board = [animal.serialize() for animal in self.contents]
         return simple_board
+
+    def clear_of_types(self, types):
+        """Remove all instances of one or more types from the board."""
+        existing = only((a for a in self.contents if isinstance(a, types)))
+        if existing is None:
+            logger.info(f"There are no {types} on the board yet.")
+        else:
+            logger.info(f"Removing {existing} from board.")
+            if issubclass(existing, Animal):
+                for seg in existing.segments:
+                    self.grid[seg.loc].obj = None
+            else:
+                self.grid[existing.loc].obj = None
+            self.contents.remove(existing)
 
 
 class GameSetup(EventDispatcher):
+
     selected_animal_type = ObjectProperty(None, allownone=True)
     active_page = NumericProperty()
     is_first_player = BooleanProperty(False)
@@ -304,106 +339,16 @@ class GameSetup(EventDispatcher):
         page = self.pages[self.active_page]
         return page[0].value, page[1].value
 
-    def clear_board_of_active_page(self):
-        avail_types = self.avail_types
-        existing = only((a for a in self.board.animals if isinstance(a, avail_types)))
-        if existing is None:
-            logger.info(f"There's no animal on the board yet.")
-        else:
-            logger.info(f"Removing {existing} from board.")
-            for seg in existing.segments:
-                self.board.grid[(seg.row, seg.col)].obj = None
-            self.board.animals.remove(existing)
-
-
-class GameOLD:
-    """Translation layer between the DB representation and the players.
-
-    Most importantly, there's only one game representation.
-    But, each player wants to view the game as "theirs".
-    And the other player should be the "opponent".
-
-    It would be inefficient to store two copies of this data.
-    (And maybe equally confusing).
-    This class allows each player to have their own view of the game,
-    while running off of the same database data.
-    ---
-
-
-    """
-
-    _instance_count = 0
-
-    def __init__(self, db_rep=None, user=None):
-        GameOLD._instance_count += 1
-        if db_rep is None or user is None:
-            if GameOLD._instance_count == 1:
-                logger.info("Created first (and only temporarily empty) Game instance")
-                return
-            err_msg = "Only the initial/global instance is allowed to be unpopulated on instantiation."
-            raise ValueError(err_msg)
-        logger.info(f"Created game instance #{GameOLD._instance_count}")
-        self.db_rep = db_rep
-
-        self.you_are_p1 = db_rep["player1"]["username"] == user.username
-        self.board_column = "player1_board" if self.you_are_p1 else "player2_board"
-        self.opponent = (db_rep["player2"] if self.you_are_p1 else db_rep["player1"])["username"]
-        self._board = Board.deserialize(db_rep[self.board_column])
-
-    @property
-    def setup_status(self):
-        if self.db_rep["setup_status"] == SetupStatus.NEITHER.value:
-            return SetupStatus.NEITHER
-        if self.db_rep["setup_status"] == SetupStatus.COMPLETE.value:
-            return SetupStatus.COMPLETE
-        just_you_done = self.db_rep["setup_status"] == SetupStatusInternal.PLAYER1.value and self.you_are_p1
-        if just_you_done:
-            return SetupStatus.YOU_DONE_OPP_NOT
-        return SetupStatus.OPP_DONE_YOU_NOT
-
-    @setup_status.setter
-    def setup_status(self, new):
-        self.db_rep["setup_status"] = new.value
-
-    @property
-    def status(self):
-        return Status[self.db_rep["status"]]
-
-    @status.setter
-    def status(self, new):
-        self.db_rep["status"] = new.value
-
-    @property
-    def board(self):
-        return self._board
-
-    @board.setter
-    def board(self, new):
-        self._board = new
-        self.commit_board()
-
-    def commit_board(self):
-        logger.info("Committing board:")
-        simple_board = self._board.serialize()
-        logger.info(str(simple_board))
-        self.db_rep[self.board_column] = BlobMedia("text/plain", compress(pickle.dumps(simple_board)))
-
-    def notify_of_setup_finished(self):
-        if self.setup_status == SetupStatus.NEITHER and self.you_are_p1:
-            self.setup_status = SetupStatusInternal.PLAYER1
-        elif self.setup_status == SetupStatus.NEITHER and not self.you_are_p1:
-            self.setup_status = SetupStatusInternal.PLAYER2
-        else:
-            self.setup_status = SetupStatus.COMPLETE
-
 
 class Game(EventDispatcher):
     _instance_count = 0
     db_rep = ObjectProperty()
     you_are_p1 = BooleanProperty(defaultvalue=None)
-    board_column = StringProperty()
+    your_board_col_label = StringProperty()
+    opp_board_col_label = StringProperty()
     opponent = StringProperty()
     board = ObjectProperty()
+    opp_board = ObjectProperty()
     setup_status = ObjectProperty()
     status = ObjectProperty()
     your_turn = BooleanProperty(defaultvalue=None)
@@ -420,14 +365,49 @@ class Game(EventDispatcher):
             raise ValueError(err_msg)
         self.db_rep = db_rep
         self.you_are_p1 = db_rep["player1"]["username"] == user.username
-        self.board_column = "player1_board" if self.you_are_p1 else "player2_board"
         self.opponent = (db_rep["player2"] if self.you_are_p1 else db_rep["player1"])["username"]
-        self.board = Board.deserialize(db_rep[self.board_column])
-        self.setup_status = SetupStatus[self.db_rep["setup_status"]]
+        self.your_board_col_label = "player1_board" if self.you_are_p1 else "player2_board"
+        self.opp_board_col_label = "player2_board" if self.you_are_p1 else "player1_board"
+        self.board = Board.deserialize(db_rep[self.your_board_col_label])
+        self.opp_board = Board.deserialize(db_rep[self.opp_board_col_label])
+        self.setup_status = self.fetch_setup_status()
         self.status = Status[self.db_rep["status"]]
         self.your_turn = self.db_rep["turn"]["username"] == user.username
-        self.bind(setup_status=self.commit_setup_status_to_db)
+        self.bind(board=self.commit_board)
+        self.bind(setup_status=self.commit_setup_status)
 
-    def commit_setup_status_to_db(self, new):
-        print(new)
-        1/0
+    def fetch_setup_status(self):
+        if self.db_rep["setup_status"] == SetupStatus.NEITHER.value:
+            return SetupStatus.NEITHER
+        if self.db_rep["setup_status"] == SetupStatus.COMPLETE.value:
+            return SetupStatus.COMPLETE
+        just_you_done = self.db_rep["setup_status"] == SetupStatusInternal.PLAYER1.value and self.you_are_p1
+        if just_you_done:
+            return SetupStatus.YOU_DONE_OPP_NOT
+        return SetupStatus.OPP_DONE_YOU_NOT
+
+    def commit_board(self, _, board):
+        logger.info("Committing board:")
+        simple_board = board.serialize()
+        logger.info(str(simple_board))
+        self.db_rep[self.your_board_col_label] = BlobMedia("text/plain", compress(pickle.dumps(simple_board)))
+
+    def commit_setup_status(self, _, setup_status):
+        if setup_status == SetupStatus.YOU_DONE_OPP_NOT and self.you_are_p1:
+            self.db_rep["setup_status"] = SetupStatusInternal.PLAYER1.value
+        elif setup_status == SetupStatus.YOU_DONE_OPP_NOT and not self.you_are_p1:
+            self.db_rep["setup_status"] = SetupStatusInternal.PLAYER2.value
+        elif setup_status == SetupStatus.COMPLETE:
+            self.db_rep["setup_status"] = SetupStatus.COMPLETE.value
+        else:
+            ValueError(f"{setup_status} is not in a valid state at this time.")
+
+    def notify_of_setup_finished(self):
+        # TODO if I generalize polling for updates, remove this.
+        fresh_setup_status = self.fetch_setup_status()  # in case your opp finished while you were messing around
+        if fresh_setup_status == SetupStatus.NEITHER:
+            self.setup_status = SetupStatus.YOU_DONE_OPP_NOT
+        elif fresh_setup_status == SetupStatus.OPP_DONE_YOU_NOT:
+            self.setup_status = SetupStatus.COMPLETE
+        else:
+            raise ValueError(f"{fresh_setup_status} is not a valid setup status.")

@@ -7,10 +7,47 @@ from loguru import logger
 from more_itertools import only
 
 from sonora.buttons_dir.updater import ModelUpdater, switch_to_screen
-from sonora.models import Game, SetupStatus
+from sonora.models import Game, SetupStatus, Shot
 from sonora.popups import ErrorPopup, FinishSetupConfirmation, NextSetupPageConfirmation
 from sonora.static import COLS, SonoraColor
 
+
+class OppBoardBtn(Button, ModelUpdater):
+    """Note: Unless we start adding powers to the animals, this button doesn't do anything."""
+    def __init__(self, row, col, **kwargs):
+        super(OppBoardBtn, self).__init__(**kwargs)
+        self.row = row
+        self.col = col
+        self.text = f"{col}{str(row)}"
+        self.square = None
+        self.game.bind(opp_board=self.finish_init_after_board_load)
+
+    def finish_init_after_board_load(self, instance, opp_board):
+        self.square = opp_board.grid[(self.row, self.col)]
+        self.square.bind(obj=self.update_bg_img)
+        # This needs to exist since the square changed before the binding.
+        self.update_bg_img(None, self.square.obj)
+
+    def update_bg_img(self, instance, obj):
+        """
+        Note: This is very similar, but not the same as, `SetupBoardBtn`.
+        """
+        default = "atlas://data/images/defaulttheme/button"
+        if obj is None:
+            self.background_normal = default
+            self.text = f"{self.col}{str(self.row)}"
+        else:
+            self.background_normal = obj.img
+            self.text = ""
+
+    def on_press(self):
+        """Place a Shot"""
+        # TODO de-duplicate
+        existing = only((a for a in self.board.contents if isinstance(a, Shot)))
+        if existing is not None:
+            new_shot = Shot(self.row, self.col)
+            self.board.grid[(self.row, self.col)].obj = None
+            self.board.contents.remove(existing)
 
 class YourBoardBtn(Button, ModelUpdater):
     """Note: Unless we start adding powers to the animals, this button doesn't do anything."""
@@ -19,14 +56,12 @@ class YourBoardBtn(Button, ModelUpdater):
         self.row = row
         self.col = col
         self.text = f"{col}{str(row)}"
-
-        # self.background_normal = self.game.board.grid[(self.row, self.col)].obj.img
-        # self.square = self.game_setup.board.grid[(self.row, self.col)]
-        # self.square.bind(obj=self.update_bg_img)
-
+        self.square = None
         self.game.bind(board=self.finish_init_after_board_load)
 
     def finish_init_after_board_load(self, instance, board):
+        if self.square is not None:  # We only need to do this once, not everytime the board changes
+            return
         self.square = board.grid[(self.row, self.col)]
         self.square.bind(obj=self.update_bg_img)
         # This needs to exist since the square changed before the binding.
@@ -107,13 +142,12 @@ class SetupBoardBtn(Button, ModelUpdater):
            If so, remove that animal from the board, then place the new one.
            (If it's the same animal, this results in a 'move'.)
         """
-        self.game_setup.clear_board_of_active_page()
+        self.game_setup.board.clear_of_types(self.game_setup.avail_types)
         logger.info(f"Placing {new_animal}.")
         for seg in new_animal.segments:
             self.game_setup.board.grid[(seg.row, seg.col)].obj = seg
-        self.game_setup.board.animals.append(new_animal)
-        print(self.game_setup.board.grid)
-        print(self.game_setup.board.animals)
+        self.game_setup.board.contents.append(new_animal)
+        logger.info(self.game_setup.board.contents)
 
     def on_press(self):
         if self.game_setup.selected_animal_type is None:
@@ -140,7 +174,7 @@ class AnimalButton(ButtonBehavior, Image, ModelUpdater):
         That way, when the logic bound to the `selected_animal_type` is triggered,
         everything is calculated on a clean board.
         """
-        self.game_setup.clear_board_of_active_page()
+        self.game_setup.board.clear_of_types(self.game_setup.avail_types)
         self.game_setup.selected_animal_type = self.animal_type if select else None
 
     def on_press(self):
@@ -163,6 +197,17 @@ class ResumeGameBtn(Button, ModelUpdater):
         self.game.__init__(self.game_for_btn.db_rep, self.user)
 
     def on_press(self):
+        """Try to restart game.
+
+        We can get here from two different ways:
+        1. Starting up the app and doing a login.
+        2. Finishing setup and being navigated back to the user_home screen.
+
+        If
+        """
+        # This seems to be necessary for the case where you end up at user_home from Setup.
+        self.game_for_btn.setup_status = self.game_for_btn.fetch_setup_status()
+
         if self.game_for_btn.setup_status == SetupStatus.YOU_DONE_OPP_NOT:
             msg = "You've already completed setup.\n" f"Waiting on {self.game_for_btn.opponent} to finish."
             ErrorPopup(msg).open()
@@ -184,7 +229,7 @@ class CreateGameBtn(Button, ModelUpdater):
         self.background_color = SonoraColor.SONORAN_SAGE.value
 
     def update_model(self, game_row, **kwargs):
-        self.user.game_rows = [game_row]
+        self.user.game_rows.append(game_row)
 
     def on_press(self):
         opponent_name = self.parent.parent.username.text
@@ -197,6 +242,7 @@ class CreateGameBtn(Button, ModelUpdater):
             return
         logger.info(f"Creating a new game with {opponent_name}")
         self.update_model(row_or_err)
+        # Important: this line causes the current db row to become the Game
         ResumeGameBtn(row_or_err).on_press()
 
 
@@ -313,7 +359,7 @@ class GotoNextSetupPartBtn(Button, ModelUpdater):
 
     def on_press(self):
         avail_types = self.game_setup.avail_types
-        existing = only((a for a in self.game_setup.board.animals if isinstance(a, avail_types)))
+        existing = only((a for a in self.game_setup.board.contents if isinstance(a, avail_types)))
         if existing is None:
             msg = "You must place an animal before continuing."
             ErrorPopup(message=msg).open()
@@ -346,10 +392,10 @@ class GotoOppBoardBtn(Button):
         super(GotoOppBoardBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
         self.text = "Opponent's Board"
-        self.background_color = SonoraColor.SONORAN_SAGE.value
+        self.background_color = SonoraColor.DESERT_RAIN.value
 
     def on_press(self):
-        switch_to_screen("opp_board", "up")
+        switch_to_screen("opp_board", "down")
 
 
 class GotoYourBoardBtn(Button):
@@ -357,7 +403,18 @@ class GotoYourBoardBtn(Button):
         super(GotoYourBoardBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
         self.text = "Your Board"
+        self.background_color = SonoraColor.DESERT_RAIN.value
+
+    def on_press(self):
+        switch_to_screen("your_board", "up")
+
+
+class TakeTurnBtn(Button):
+    def __init__(self, **kwargs):
+        super(TakeTurnBtn, self).__init__(**kwargs)
+        self.size_hint = (1, 0.1)
+        self.text = "Take Turn"
         self.background_color = SonoraColor.SONORAN_SAGE.value
 
     def on_press(self):
-        switch_to_screen("opp_board", "down")
+        switch_to_screen("your_board", "up")

@@ -10,7 +10,7 @@ class SonoraColor(Enum):
     SONORAN_SAGE = (0.6235, 0.7412, 0.6471, 1)
     SEDONA_SUNSET = (0.7725, 0.2902, 0.2902, 1)
     MOUSE_FUR = (0.8392, 0.8078, 0.7882, 1)
-
+    DESERT_RAIN = (0.3216, 0.6392, 1.0, 1)
 
 class SetupStatusInternal(Enum):
     PLAYER1 = "PLAYER1"

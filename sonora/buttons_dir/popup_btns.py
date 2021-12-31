@@ -15,6 +15,16 @@ class ConfirmBtn(Button, ModelUpdater):
         self.parent.parent.parent.parent.dismiss()
 
 
+class ExitSetupConfirmBtn(ConfirmBtn):
+    def __init__(self, **kwargs):
+        super(ExitSetupConfirmBtn, self).__init__(**kwargs)
+
+    def on_press(self):
+        logger.info(f"All setup information has been lost")
+        switch_to_screen("user_home", "right")
+        self.dismiss_popup()
+
+
 class NextSetupPageConfirmBtn(ConfirmBtn):
     def __init__(self, **kwargs):
         super(NextSetupPageConfirmBtn, self).__init__(**kwargs)
@@ -71,4 +81,4 @@ class CancelBtn(Button):
         self.background_color = SonoraColor.SEDONA_SUNSET.value
 
     def on_press(self):
-        self.parent.parent.dismiss()
+        self.parent.parent.parent.parent.dismiss()

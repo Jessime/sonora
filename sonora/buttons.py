@@ -8,7 +8,7 @@ from more_itertools import only
 
 from sonora.buttons_dir.updater import ModelUpdater, switch_to_screen
 from sonora.models import Game, Segment, SetupStatus, Photo
-from sonora.popups import ErrorPopup, FinishSetupConfirmation, NextSetupPageConfirmation, NotificationPopup, TakeTurnConfirmation
+from sonora.popups import ErrorPopup, FinishSetupConfirmation, NextSetupPageConfirmation, TakeTurnConfirmation, ExitSetupConfirmation
 from sonora.static import COLS, SonoraColor
 
 
@@ -406,16 +406,17 @@ class GotoNextSetupPartBtn(Button, ModelUpdater):
             NextSetupPageConfirmation(msg).open()
 
 
-class ResetSetupBtn(Button):
+class ExitSetupBtn(Button):
     def __init__(self, **kwargs):
-        super(ResetSetupBtn, self).__init__(**kwargs)
+        super(ExitSetupBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
-        self.text = "Reset Board Setup"
+        self.text = "Exit Board Setup"
         self.background_color = SonoraColor.SEDONA_SUNSET.value
 
     def on_press(self):
-        # TODO raise popup warning/confirmation
-        switch_to_screen("setup_game", "right")
+        msg = ("Are you sure you want to exit?\n"
+               "Doing so will lose all setup information.")
+        ExitSetupConfirmation(msg).open()
 
 
 class GotoOppBoardBtn(Button):

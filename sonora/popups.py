@@ -2,7 +2,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 
-from sonora.buttons_dir.popup_btns import CancelBtn, FinishSetupConfirmBtn, NextSetupPageConfirmBtn, TakeTurnConfirmBtn
+from sonora.buttons_dir.popup_btns import CancelBtn, FinishSetupConfirmBtn, NextSetupPageConfirmBtn, TakeTurnConfirmBtn, ExitSetupConfirmBtn
 
 
 class NotificationPopup(Popup):
@@ -49,12 +49,24 @@ class TakeTurnConfirmationContent(ConfirmationContent):
         self.add_widget(TakeTurnConfirmBtn())
 
 
+class ExitSetupConfirmationContent(ConfirmationContent):
+    def __init__(self, message, **kwargs):
+        super(ExitSetupConfirmationContent, self).__init__(message, **kwargs)
+        self.add_widget(ExitSetupConfirmBtn())
+
+
 class ConfirmationPopup(Popup):
     def __init__(self, **kwargs):
         super(ConfirmationPopup, self).__init__(**kwargs)
         self.title = "WARNING"
         self.title_align = "center"
         self.size_hint = (0.5, 0.5)
+
+
+class ExitSetupConfirmation(ConfirmationPopup):
+    def __init__(self, message, **kwargs):
+        super(ExitSetupConfirmation, self).__init__(**kwargs)
+        self.add_widget(ExitSetupConfirmationContent(message))
 
 
 class NextSetupPageConfirmation(ConfirmationPopup):

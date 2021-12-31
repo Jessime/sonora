@@ -21,7 +21,7 @@ from sonora.buttons import (
     GotoYourBoardBtn,
     LoginBtn,
     OppBoardBtn,
-    ResetSetupBtn,
+    ExitSetupBtn,
     ResumeGameBtn,
     TakeTurnBtn,
     SetupBoardBtn,
@@ -153,7 +153,7 @@ class NextOrReset(GridLayout):
         super(NextOrReset, self).__init__(**kwargs)
         self.cols = 2
         self.size_hint = (1, 0.1)
-        self.add_widget(ResetSetupBtn())
+        self.add_widget(ExitSetupBtn())
         self.add_widget(GotoNextSetupPartBtn())
 
 

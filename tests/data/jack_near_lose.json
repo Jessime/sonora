@@ -1,0 +1,102 @@
+[
+  {
+    "class": "Snake",
+    "params": {
+      "base_row": 3,
+      "base_col": "A"
+    },
+    "attrs": {
+      "segments": [
+        {
+          "class": "SnakeTail",
+          "params": {
+            "row": 3,
+            "col": "A"
+          },
+          "attrs": {
+            "shot": true
+          }
+        },
+        {
+          "class": "SnakeBody",
+          "params": {
+            "row": 2,
+            "col": "A"
+          },
+          "attrs": {
+            "shot": true
+          }
+        },
+        {
+          "class": "SnakeHead",
+          "params": {
+            "row": 1,
+            "col": "A"
+          },
+          "attrs": {
+            "shot": true
+          }
+        }
+      ]
+    }
+  },
+  {
+    "class": "Ringtail",
+    "params": {
+      "base_row": 9,
+      "base_col": "A"
+    },
+    "attrs": {
+      "segments": [
+        {
+          "class": "RingtailHead",
+          "params": {
+            "row": 9,
+            "col": "A"
+          },
+          "attrs": {
+            "shot": true
+          }
+        },
+        {
+          "class": "RingtailBody",
+          "params": {
+            "row": 9,
+            "col": "B"
+          },
+          "attrs": {
+            "shot": true
+          }
+        },
+        {
+          "class": "RingtailTail",
+          "params": {
+            "row": 9,
+            "col": "C"
+          },
+          "attrs": {
+            "shot": true
+          }
+        },
+        {
+          "class": "RingtailTail2",
+          "params": {
+            "row": 10,
+            "col": "C"
+          },
+          "attrs": {
+            "shot": false
+          }
+        }
+      ]
+    }
+  },
+  {
+    "class": "Miss",
+    "params": {
+      "row": 10,
+      "col": "E"
+    },
+    "attrs": {}
+  }
+]

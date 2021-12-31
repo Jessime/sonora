@@ -7,17 +7,22 @@ from loguru import logger
 from more_itertools import only
 
 from sonora.buttons_dir.updater import ModelUpdater, switch_to_screen
-from sonora.models import Game, SetupStatus, Shot
-from sonora.popups import ErrorPopup, FinishSetupConfirmation, NextSetupPageConfirmation
+from sonora.models import Game, Segment, SetupStatus, Photo
+from sonora.popups import ErrorPopup, FinishSetupConfirmation, NextSetupPageConfirmation, NotificationPopup, TakeTurnConfirmation
 from sonora.static import COLS, SonoraColor
 
 
 class OppBoardBtn(Button, ModelUpdater):
-    """Note: Unless we start adding powers to the animals, this button doesn't do anything."""
+    """
+
+    """
     def __init__(self, row, col, **kwargs):
         super(OppBoardBtn, self).__init__(**kwargs)
         self.row = row
         self.col = col
+
+        self.default_bg = "atlas://data/images/defaulttheme/button"
+        self.shot_bg = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/green_check.png"
         self.text = f"{col}{str(row)}"
         self.square = None
         self.game.bind(opp_board=self.finish_init_after_board_load)
@@ -30,24 +35,46 @@ class OppBoardBtn(Button, ModelUpdater):
 
     def update_bg_img(self, instance, obj):
         """
-        Note: This is very similar, but not the same as, `SetupBoardBtn`.
+        One of a few things can happen:
+
+        1. We want to show the default background. That happens if:
+            A. There's nothing on that square
+            B. There's an undiscovered segment on the square
+        2. We want to show a "shot" background. That happens if:
+            A. The segment is shot, but the whole animal isn't
+        3. We want to show the object image. That happens if:
+            A. It's a Photo or something similar
+            B. It's a segment is part of an Animal who's been entirely shot
         """
-        default = "atlas://data/images/defaulttheme/button"
-        if obj is None:
-            self.background_normal = default
+        is_seg = issubclass(type(obj), Segment)
+        animal_hidden = is_seg and not obj.animal_backref(self.game.opp_board).shot
+        seg_hidden = is_seg and not obj.shot and animal_hidden
+        show_shot_seg = is_seg and obj.shot and animal_hidden
+        if obj is None or seg_hidden:
+            self.background_normal = self.default_bg
             self.text = f"{self.col}{str(self.row)}"
+        elif show_shot_seg:
+            self.background_normal = self.shot_bg
+            self.text = ""
         else:
             self.background_normal = obj.img
             self.text = ""
 
+    def update_model(self, **kwargs):
+        self.game.opp_board.clear_of_types(Photo)
+        self.game.opp_board + Photo(self.row, self.col)
+
     def on_press(self):
-        """Place a Shot"""
-        # TODO de-duplicate
-        existing = only((a for a in self.board.contents if isinstance(a, Shot)))
-        if existing is not None:
-            new_shot = Shot(self.row, self.col)
-            self.board.grid[(self.row, self.col)].obj = None
-            self.board.contents.remove(existing)
+        """Try to place a Photo"""
+        if not self.game.your_turn:
+            msg = "You cannot currently take a photo, since it's not your turn."
+            ErrorPopup(message=msg).open()
+        # Rely on the state of the displayed image, since we don't want to disallow clicking on occupied squares
+        elif self.background_normal != self.default_bg:
+            ErrorPopup("You have already placed a photo here.").open()
+        else:
+            self.update_model()
+
 
 class YourBoardBtn(Button, ModelUpdater):
     """Note: Unless we start adding powers to the animals, this button doesn't do anything."""
@@ -55,11 +82,14 @@ class YourBoardBtn(Button, ModelUpdater):
         super(YourBoardBtn, self).__init__(**kwargs)
         self.row = row
         self.col = col
+
         self.text = f"{col}{str(row)}"
         self.square = None
+        self.shot_bg = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/x_mark.png"
         self.game.bind(board=self.finish_init_after_board_load)
 
     def finish_init_after_board_load(self, instance, board):
+        # FIXME Something's going wrong here with displaying the your board when you don't close out after setup.
         if self.square is not None:  # We only need to do this once, not everytime the board changes
             return
         self.square = board.grid[(self.row, self.col)]
@@ -75,6 +105,9 @@ class YourBoardBtn(Button, ModelUpdater):
         if obj is None:
             self.background_normal = default
             self.text = f"{self.col}{str(self.row)}"
+        elif issubclass(type(obj), Segment) and obj.shot:
+            self.background_normal = self.shot_bg
+            self.text = ""
         else:
             self.background_normal = obj.img
             self.text = ""
@@ -312,7 +345,7 @@ class LoginBtn(Button, ModelUpdater):
         correct_pass = bcrypt.checkpw(password, bytes(pass_hash, encoding="utf-8"))
         if correct_pass:
             logger.info(f"{username} successfully logged in")
-            games = anvil.server.call("get_games", username)
+            games = anvil.server.call("get_incomplete_games", username)
             logger.info(f"Found {len(games)} games.")
             self.update_model(username, games)
             switch_to_screen("user_home")
@@ -367,12 +400,10 @@ class GotoNextSetupPartBtn(Button, ModelUpdater):
         last = self.game_setup.active_page + 1 == len(self.game_setup.pages)
         if last:
             msg = "Are you finished setting up?\n" "The game will start if you confirm."
-            popup = FinishSetupConfirmation(msg)
-            popup.open()
+            FinishSetupConfirmation(msg).open()
         else:
             msg = "Are you sure you want to continue?\n" "You cannot adjust these animals after."
-            popup = NextSetupPageConfirmation(msg)
-            popup.open()
+            NextSetupPageConfirmation(msg).open()
 
 
 class ResetSetupBtn(Button):
@@ -391,7 +422,7 @@ class GotoOppBoardBtn(Button):
     def __init__(self, **kwargs):
         super(GotoOppBoardBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
-        self.text = "Opponent's Board"
+        self.text = "Go to Opponent's Board"
         self.background_color = SonoraColor.DESERT_RAIN.value
 
     def on_press(self):
@@ -402,14 +433,14 @@ class GotoYourBoardBtn(Button):
     def __init__(self, **kwargs):
         super(GotoYourBoardBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
-        self.text = "Your Board"
+        self.text = "Go to Your Board"
         self.background_color = SonoraColor.DESERT_RAIN.value
 
     def on_press(self):
         switch_to_screen("your_board", "up")
 
 
-class TakeTurnBtn(Button):
+class TakeTurnBtn(Button, ModelUpdater):
     def __init__(self, **kwargs):
         super(TakeTurnBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
@@ -417,4 +448,21 @@ class TakeTurnBtn(Button):
         self.background_color = SonoraColor.SONORAN_SAGE.value
 
     def on_press(self):
-        switch_to_screen("your_board", "up")
+        photo = only((a for a in self.game.opp_board.contents if isinstance(a, Photo)))
+        if photo is None:
+            msg = "You must place a photo to take a turn."
+            ErrorPopup(msg).open()
+        else:
+            msg = "Are you sure you want to take your turn?"
+            TakeTurnConfirmation(msg).open()
+
+
+class DoSomethingBtn(Button, ModelUpdater):
+    def __init__(self, **kwargs):
+        super(DoSomethingBtn, self).__init__(**kwargs)
+        self.size_hint = (1, 0.1)
+        self.text = "IDK YET"
+        self.background_color = SonoraColor.SONORAN_SAGE.value
+
+    def on_press(self):
+        print("maybe ask someone else")

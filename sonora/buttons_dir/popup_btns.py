@@ -45,6 +45,25 @@ class FinishSetupConfirmBtn(ConfirmBtn, ModelUpdater):
             switch_to_screen("user_home", "right")
 
 
+class TakeTurnConfirmBtn(ConfirmBtn, ModelUpdater):
+    def __init__(self, **kwargs):
+        super(TakeTurnConfirmBtn, self).__init__(**kwargs)
+
+    def update_model(self, **kwargs):
+        self.game.opp_board.photo_to_shot_or_miss()
+        self.game.commit_opp_board(None, self.game.opp_board)
+        if self.game.check_for_win():
+            self.game.set_win_state()
+            switch_to_screen("user_home", "right")
+        else:
+            self.game.switch_to_opps_turn()
+
+    def on_press(self):
+        logger.info("Saving turn.")
+        self.update_model()
+        self.dismiss_popup()
+
+
 class CancelBtn(Button):
     def __init__(self, **kwargs):
         super(CancelBtn, self).__init__(**kwargs)

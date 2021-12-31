@@ -2,14 +2,15 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 
-from sonora.buttons_dir.popup_btns import CancelBtn, FinishSetupConfirmBtn, NextSetupPageConfirmBtn
+from sonora.buttons_dir.popup_btns import CancelBtn, FinishSetupConfirmBtn, NextSetupPageConfirmBtn, TakeTurnConfirmBtn
 
 
 class NotificationPopup(Popup):
-    def __init__(self, **kwargs):
+    def __init__(self, message, **kwargs):
         super(NotificationPopup, self).__init__(**kwargs)
         self.title = "Note:"
         self.title_align = "center"
+        self.content = Label(text=message)
         self.size_hint = (0.5, 0.5)
 
 
@@ -42,6 +43,12 @@ class FinishSetupConfirmationContent(ConfirmationContent):
         self.add_widget(FinishSetupConfirmBtn())
 
 
+class TakeTurnConfirmationContent(ConfirmationContent):
+    def __init__(self, message, **kwargs):
+        super(TakeTurnConfirmationContent, self).__init__(message, **kwargs)
+        self.add_widget(TakeTurnConfirmBtn())
+
+
 class ConfirmationPopup(Popup):
     def __init__(self, **kwargs):
         super(ConfirmationPopup, self).__init__(**kwargs)
@@ -62,19 +69,7 @@ class FinishSetupConfirmation(ConfirmationPopup):
         self.add_widget(FinishSetupConfirmationContent(message))
 
 
-#
-# class IsFirstPlayer(NotificationPopup):
-#     def __init__(self, **kwargs):
-#         super(IsFirstPlayer, self).__init__(**kwargs)
-#         msg = "Congratulations! You were chosen to be the first player.\n" "Please take your opening move now."
-#         self.content = Label(text=msg)
-#
-#
-# class IsSecondPlayer(NotificationPopup):
-#     def __init__(self, **kwargs):
-#         super(IsSecondPlayer, self).__init__(**kwargs)
-#         msg = (
-#             "You have been chosen to be the second player.\n"
-#             "We will notify you when your opponent has taken their turn."
-#         )
-#         self.content = Label(text=msg)
+class TakeTurnConfirmation(ConfirmationPopup):
+    def __init__(self, message, **kwargs):
+        super(TakeTurnConfirmation, self).__init__(**kwargs)
+        self.add_widget(TakeTurnConfirmationContent(message))

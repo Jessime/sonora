@@ -53,7 +53,7 @@ def create_game(username, opponent_name):
 
 
 @anvil.server.callable
-def get_games(username):
+def get_incomplete_games(username):
     user = app_tables.users.get(username=username)
-    games = list(app_tables.games.search(q.any_of(player1=user, player2=user)))
+    games = list(app_tables.games.search(q.any_of(player1=user, player2=user), status=q.not_(Status.COMPLETE.value)))
     return games

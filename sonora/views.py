@@ -12,6 +12,7 @@ from sonora.buttons import (
     BackStartScreenBtn,
     CreateAccountBtn,
     CreateGameBtn,
+    DoSomethingBtn,
     GotoCreateAccountBtn,
     GotoCreateGameBtn,
     GotoLoginScreenBtn,
@@ -27,8 +28,8 @@ from sonora.buttons import (
     YourBoardBtn,
 )
 
-# from sonora.popups import IsFirstPlayer, IsSecondPlayer
-from sonora.static import COLS, SonoraColor
+from sonora.popups import NotificationPopup
+from sonora.static import COLS, SonoraColor, Status
 
 
 def set_background_color(label, color):
@@ -144,7 +145,7 @@ class YourBoardScreen(Screen):
         self.layout.add_widget(GameStateHeader())
 
         self.layout.add_widget(OuterYourBoardArea())
-        self.layout.add_widget(GameBtnRow(GotoOppBoardBtn, TakeTurnBtn))
+        self.layout.add_widget(GameBtnRow(GotoOppBoardBtn, DoSomethingBtn))
 
 
 class NextOrReset(GridLayout):
@@ -305,22 +306,25 @@ class Greeting(Label, ModelViewer):
         self.text = f"Hello, {name}"
 
 
-class ActiveGames(GridLayout, ModelViewer):
+class IncompleteGames(GridLayout, ModelViewer):
     """Display all the ongoing games a user currently has."""
 
     def __init__(self, **kwargs):
-        super(ActiveGames, self).__init__(**kwargs)
+        super(IncompleteGames, self).__init__(**kwargs)
         self.cols = 4
         self.size_hint = (1, 0.8)
         self.user.bind(game_rows=self.update_game_buttons)
 
     def update_game_buttons(self, arg1, arg2):
+        # Even though only incomplete games are returned on load, a game can become complete afterwards.
         for game_row in self.user.game_rows:
+            if game_row["status"] == Status.COMPLETE.value:
+                continue
             game_btn = ResumeGameBtn(game_row)
             self.add_widget(game_btn)
 
 
-class UserHomeScreen(Screen):
+class UserHomeScreen(Screen, ModelViewer):
     """Display all the ongoing games a user currently has."""
 
     def __init__(self, **kwargs):
@@ -330,8 +334,21 @@ class UserHomeScreen(Screen):
         self.add_widget(self.layout)
         self.layout.add_widget(Greeting())
 
-        self.layout.add_widget(ActiveGames())
+        self.incomplete_games = IncompleteGames()
+        self.layout.add_widget(self.incomplete_games)
         self.layout.add_widget(GotoCreateGameBtn())
+        self.game.bind(winner=self.announce_win)
+
+    def announce_win(self, arg1, arg2):
+        # TODO can both win and lose fit in here?
+        self.incomplete_games.clear_widgets()
+        self.incomplete_games.update_game_buttons(None, None)
+
+        msg = ("CONGRATULATIONS!\n"
+               "You've photographed all the animals, \n"
+               f"and beaten {self.game.opponent}. \n"
+               "Good job!\n")
+        NotificationPopup(msg).open()
 
 
 class UsernamePassword(GridLayout):

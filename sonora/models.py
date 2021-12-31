@@ -48,22 +48,24 @@ class BaseBoardObject:
 
         Note: feel free to override for more complicated objects.
         """
-        rep = {"class": self.__class__.__name__, "params": {}, "attrs": {}}
+        rep = {"class": self.__class__.__name__, "params": {"row": self.row, "col": self.col}, "attrs": {}}
         return rep
 
+    @classmethod
+    def deserialize(cls, db_rep):
+        new = cls(**db_rep["params"])
+        for name, value in db_rep["attrs"].items():
+            setattr(new, name, value)
+        return new
 
-class Shot(BaseBoardObject):
-    """An attempt to take a shot of opponent's animal."""
 
+class Photo(BaseBoardObject):
+    """A transient attempt to take a photo of opponent's animal."""
     img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/camera.png"
 
 
-class Hit(BaseBoardObject):
-    pass
-
-
 class Miss(BaseBoardObject):
-    pass
+    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/saguaro.jpeg"
 
 
 class Segment(BaseBoardObject):
@@ -82,15 +84,27 @@ class Segment(BaseBoardObject):
         }
         return self_data
 
-    @classmethod
-    def deserialize(cls, db_rep):
-        new = cls(**db_rep["params"])
-        for name, value in db_rep["attrs"].items():
-            setattr(new, name, value)
-        return new
+    def animal_backref(self, board):
+        """Find the animal a segment belongs to.
 
+        I'm sorry for this piece of magic, but I don't want to store the animal a segment belongs to in the segment.
+        Instead, use some string matching based on class names to determine which animal the segment is a part of.
+        I've been consistent with naming conventions, so I don't think this will be a cause of bugs."""
+        name = self.__class__.__name__
+        chars = [name[0]]
+        for c in name[1:]:
+            if c.islower():
+                chars.append(c)
+            else:
+                break
+        animal_cls = globals()[''.join(chars)]
+        animal = only((a for a in board.contents if isinstance(a, animal_cls)))
+        return animal
 
 class Animal:
+    # Note: This isn't a BaseBoardObject because it represents multiple squares.
+    # If I get far enough that I have anything else besides animals that are multi-square,
+    # I should make a parent class that allows you to have a consistent interface for adding/removing from board, etc.
     img = None
     cls_segments = {}
 
@@ -99,6 +113,10 @@ class Animal:
         self.base_col = base_col
 
         self.segments = self.make_segments()
+
+    @property
+    def shot(self):
+        return all(seg.shot for seg in self.segments)
 
     def make_segments(self):
         """Find the final locations of all the segment for an animal.
@@ -283,6 +301,7 @@ class Board:
     def __add__(self, board_obj):
         self.grid[board_obj.loc].obj = board_obj
         self.contents.append(board_obj)
+        logger.info(f"Added {board_obj} to board.")
 
     @staticmethod
     def init_grid():
@@ -320,7 +339,7 @@ class Board:
         Importantly, `grid` and `animals` are mostly duplicate data.
         Serializing the animals is enough to reconstruct everything later.
         """
-        simple_board = [animal.serialize() for animal in self.contents]
+        simple_board = [board_obj.serialize() for board_obj in self.contents]
         return simple_board
 
     def clear_of_types(self, types):
@@ -336,6 +355,36 @@ class Board:
             else:
                 self.grid[existing.loc].obj = None
             self.contents.remove(existing)
+
+    def photo_to_shot_or_miss(self):
+        """A weird func that resolves a photo into a permanent shot-or-miss.
+
+        The reason this function is weird is because I like two design choices:
+        1. A Board Square can only contain one object at a time.
+        2. A Photo is a normal board object that can utilize general board functionality.
+
+        These two things means that Segments get removed from the board.grid when a photo is placed on it.
+        This function will either:
+        1. Turn the photo into a permanent Miss
+        2. Replace the original segment to the grid and mark it as shot.
+        """
+        photo = only((a for a in self.contents if isinstance(a, Photo)))
+        self.contents.remove(photo)
+
+        def try_find_match(contents):
+            """brute force check if any segments were in the spot"""
+            for board_obj in contents:
+                if hasattr(board_obj, "segments"):
+                    for seg in board_obj.segments:
+                        if photo.loc == seg.loc:
+                            return seg
+
+        match = try_find_match(self.contents)
+        if match is None:
+            self + Miss(*photo.loc)
+        else:
+            match.shot = True
+            self.grid[photo.loc].obj = match
 
 
 class GameSetup(EventDispatcher):
@@ -367,6 +416,7 @@ class Game(EventDispatcher):
     setup_status = ObjectProperty()
     status = ObjectProperty()
     your_turn = BooleanProperty(defaultvalue=None)
+    winner = StringProperty()
 
     def __init__(self, db_rep=None, user=None, **kwargs):
         super(Game, self).__init__(**kwargs)
@@ -388,8 +438,11 @@ class Game(EventDispatcher):
         self.setup_status = self.fetch_setup_status()
         self.status = Status[self.db_rep["status"]]
         self.your_turn = self.db_rep["turn"]["username"] == user.username
+
         self.bind(board=self.commit_board)
+        self.bind(opp_board=self.commit_opp_board)
         self.bind(setup_status=self.commit_setup_status)
+        self.bind(status=self.commit_status)
 
     def fetch_setup_status(self):
         if self.db_rep["setup_status"] == SetupStatus.NEITHER.value:
@@ -401,11 +454,25 @@ class Game(EventDispatcher):
             return SetupStatus.YOU_DONE_OPP_NOT
         return SetupStatus.OPP_DONE_YOU_NOT
 
-    def commit_board(self, _, board):
+    def _commit_either_board(self, board, col_label):
+        """Private func to save board after which column to save to has been sorted out."""
         logger.info("Committing board:")
         simple_board = board.serialize()
         logger.info(str(simple_board))
-        self.db_rep[self.your_board_col_label] = BlobMedia("text/plain", compress(pickle.dumps(simple_board)))
+        self.db_rep[col_label] = BlobMedia("text/plain", compress(pickle.dumps(simple_board)))
+
+    def commit_board(self, _, board):
+        self._commit_either_board(board, self.your_board_col_label)
+
+    def commit_opp_board(self, _, opp_board):
+        self._commit_either_board(opp_board, self.opp_board_col_label)
+
+    def commit_status(self, _, status):
+        self.db_rep["status"] = status.value
+
+    def commit_winner(self):
+        """This only gets called if you are the winner."""
+        self.db_rep["winner"] = self.db_rep["player1"] if self.you_are_p1 else self.db_rep["player2"]
 
     def commit_setup_status(self, _, setup_status):
         if setup_status == SetupStatus.YOU_DONE_OPP_NOT and self.you_are_p1:
@@ -417,6 +484,10 @@ class Game(EventDispatcher):
         else:
             ValueError(f"{setup_status} is not in a valid state at this time.")
 
+    def switch_to_opps_turn(self):
+        self.db_rep["turn"] = self.db_rep["player2"] if self.you_are_p1 else self.db_rep["player1"]
+        self.your_turn = False
+
     def notify_of_setup_finished(self):
         # TODO if I generalize polling for updates, remove this.
         fresh_setup_status = self.fetch_setup_status()  # in case your opp finished while you were messing around
@@ -426,3 +497,18 @@ class Game(EventDispatcher):
             self.setup_status = SetupStatus.COMPLETE
         else:
             raise ValueError(f"{fresh_setup_status} is not a valid setup status.")
+
+    def check_for_win(self):
+        """Returns True if all Animals have been shot.
+
+        Call this right after you take a turn, so we just need to check the opp_board.
+        """
+        return all(animal.shot for animal in self.opp_board.contents if issubclass(type(animal), Animal))
+
+    def set_win_state(self):
+        # Careful here. You hae to set status before setting winner if you want the user_home screen to look right.
+        self.commit_status(None, Status.COMPLETE)
+        self.winner = (self.db_rep["player1"] if self.you_are_p1 else self.db_rep["player2"])["username"]
+        self.commit_winner()
+        self.db_rep["turn"] = None
+

@@ -350,8 +350,8 @@ class LoginBtn(Button, ModelUpdater):
             self.update_model(username, games)
             switch_to_screen("user_home")
         else:
-            logger.warning(f"Oh no! {password} isn't correct for {username}")
-            pass  # TODO implement
+            msg = f"Oh no! That password isn't correct for {username}."
+            ErrorPopup(msg).open()
 
     def on_press(self):
         inputs = self.parent.login_input_space

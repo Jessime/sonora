@@ -28,6 +28,7 @@ class ModelUpdater:
         self.animal_types = app.animal_types
         self.game_setup = app.game_setup
         self.game = app.game
+        self.db_poll = app.db_poll
 
     def update_model(self, **kwargs):
         """Override in children as the entrypoint to modifying the models"""

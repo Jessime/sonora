@@ -27,7 +27,7 @@ from sonora.buttons import (
     SetupBoardBtn,
     YourBoardBtn,
 )
-
+from sonora.buttons_dir.updater import switch_to_screen
 from sonora.popups import NotificationPopup
 from sonora.static import COLS, SonoraColor, Status
 
@@ -69,6 +69,7 @@ class ModelViewer:
         self.animal_types = app.animal_types
         self.game_setup = app.game_setup
         self.game = app.game
+        self.db_poll = app.db_poll
         # If I actually run into a bug based on this, I'll figure out enforcement around "View Only"
 
 
@@ -317,6 +318,7 @@ class IncompleteGames(GridLayout, ModelViewer):
 
     def update_game_buttons(self, arg1, arg2):
         # Even though only incomplete games are returned on load, a game can become complete afterwards.
+        self.clear_widgets()
         for game_row in self.user.game_rows:
             if game_row["status"] == Status.COMPLETE.value:
                 continue
@@ -338,16 +340,23 @@ class UserHomeScreen(Screen, ModelViewer):
         self.layout.add_widget(self.incomplete_games)
         self.layout.add_widget(GotoCreateGameBtn())
         self.game.bind(winner=self.announce_win)
+        self.db_poll.bind(winner=self.announce_win)
 
-    def announce_win(self, arg1, arg2):
+    def announce_win(self, arg1, winner):
         # TODO can both win and lose fit in here?
         self.incomplete_games.clear_widgets()
         self.incomplete_games.update_game_buttons(None, None)
-
-        msg = ("CONGRATULATIONS!\n"
-               "You've photographed all the animals, \n"
-               f"and beaten {self.game.opponent}. \n"
-               "Good job!\n")
+        if App.get_running_app().sm.current_screen.name != "user_home":
+            switch_to_screen("user_home")
+        if winner == self.user.username:
+            msg = ("CONGRATULATIONS!\n"
+                   "You've photographed all the animals, \n"
+                   f"and beaten {self.game.opponent}. \n"
+                   "Good job!\n")
+        else:
+            msg = ("Oh no!\n"
+                   f"You've lost your game to {winner}.\n"
+                   "Better luck next time.")
         NotificationPopup(msg).open()
 
 

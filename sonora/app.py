@@ -4,6 +4,7 @@ from kivy.app import App
 from sonora.models import AnimalTypes, Game, GameSetup, User
 from sonora.static import UPLINK_CLIENT_KEY
 from sonora.views import get_screen_manager
+from sonora.poller import DBPoll
 
 
 class SonoraApp(App):
@@ -20,12 +21,13 @@ class SonoraApp(App):
         self.animal_types = AnimalTypes
         self.game_setup = GameSetup()
         self.game = Game()
+        self.db_poll = DBPoll(self.game, self.user)
         self.sm = get_screen_manager()
 
         # temp code
         from sonora.buttons import LoginBtn, ResumeGameBtn
 
-        LoginBtn().login("jk", "bad")
+        # LoginBtn().login("jk", "bad")
         # ResumeGameBtn(self.user.game_rows[0]).on_press()
 
         return self.sm

@@ -9,6 +9,7 @@ from loguru import logger
 from more_itertools import only
 
 from sonora.static import COLS, SetupStatus, SetupStatusInternal, Status
+from sonora.poller import DBPoll
 
 
 class User(EventDispatcher):
@@ -429,6 +430,7 @@ class Game(EventDispatcher):
             err_msg = "Only the initial/global instance is allowed to be unpopulated on instantiation."
             raise ValueError(err_msg)
         self.db_rep = db_rep
+        self.your_name = user.username
         self.you_are_p1 = db_rep["player1"]["username"] == user.username
         self.opponent = (db_rep["player2"] if self.you_are_p1 else db_rep["player1"])["username"]
         self.your_board_col_label = "player1_board" if self.you_are_p1 else "player2_board"
@@ -506,9 +508,8 @@ class Game(EventDispatcher):
         return all(animal.shot for animal in self.opp_board.contents if issubclass(type(animal), Animal))
 
     def set_win_state(self):
-        # Careful here. You hae to set status before setting winner if you want the user_home screen to look right.
+        # Careful here. You have to set status before setting winner if you want the user_home screen to look right.
         self.commit_status(None, Status.COMPLETE)
-        self.winner = (self.db_rep["player1"] if self.you_are_p1 else self.db_rep["player2"])["username"]
+        self.winner = self.your_name
         self.commit_winner()
         self.db_rep["turn"] = None
-

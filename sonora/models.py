@@ -1,3 +1,4 @@
+import importlib.resources
 import pickle
 from enum import Enum
 from gzip import compress, decompress
@@ -9,7 +10,12 @@ from loguru import logger
 from more_itertools import only
 
 from sonora.static import COLS, SetupStatus, SetupStatusInternal, Status
-from sonora.poller import DBPoll
+
+
+def get_img(name):
+    with importlib.resources.path("sonora.data", name) as img_path:
+        img = str(img_path)
+    return img
 
 
 class User(EventDispatcher):
@@ -62,11 +68,11 @@ class BaseBoardObject:
 
 class Photo(BaseBoardObject):
     """A transient attempt to take a photo of opponent's animal."""
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/camera.png"
+    img = get_img("camera.png")
 
 
 class Miss(BaseBoardObject):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/saguaro.jpeg"
+    img = get_img("saguaro.jpeg")
 
 
 class Segment(BaseBoardObject):
@@ -101,6 +107,7 @@ class Segment(BaseBoardObject):
         animal_cls = globals()[''.join(chars)]
         animal = only((a for a in board.contents if isinstance(a, animal_cls)))
         return animal
+
 
 class Animal:
     # Note: This isn't a BaseBoardObject because it represents multiple squares.
@@ -158,28 +165,28 @@ class Animal:
 
 
 class SnakeHead(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/snake_head.jpeg"
+    img = get_img("snake_head.jpeg")
 
     def __init__(self, row, col):
         super(SnakeHead, self).__init__(row, col)
 
 
 class SnakeBody(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/snake_body.jpeg"
+    img = get_img("snake_body.jpeg")
 
     def __init__(self, row, col):
         super(SnakeBody, self).__init__(row, col)
 
 
 class SnakeTail(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/snake_tail.jpeg"
+    img = get_img("snake_tail.jpeg")
 
     def __init__(self, row, col):
         super(SnakeTail, self).__init__(row, col)
 
 
 class Snake(Animal):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/snake.jpeg"
+    img = get_img("snake.jpeg")
     cls_segments = {
         (0, 0): SnakeTail,
         (-1, 0): SnakeBody,
@@ -191,19 +198,19 @@ class Snake(Animal):
 
 
 class CentipedeHead(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/centipede_head.png"
+    img = get_img("centipede_head.png")
 
 
 class CentipedeBody(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/centipede_body.png"
+    img = get_img("centipede_body.png")
 
 
 class CentipedeTail(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/centipede_tail.png"
+    img = get_img("centipede_tail.png")
 
 
 class Centipede(Animal):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/centipede.png"
+    img = get_img("centipede.png")
     cls_segments = {
         (0, 0): CentipedeTail,
         (0, 1): CentipedeBody,
@@ -215,23 +222,23 @@ class Centipede(Animal):
 
 
 class JavelinaMouth(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina_mouth.jpeg"
+    img = get_img("javelina_mouth.jpeg")
 
 
 class JavelinaHead(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina_head.jpeg"
+    img = get_img("javelina_head.jpeg")
 
 
 class JavelinaBack(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina_back.jpeg"
+    img = get_img("javelina_back.jpeg")
 
 
 class JavelinaBottom(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina_bottom.jpeg"
+    img = get_img("javelina_bottom.jpeg")
 
 
 class Javelina(Animal):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/javelina.jpeg"
+    img = get_img("javelina.jpeg")
     cls_segments = {
         (0, 0): JavelinaMouth,
         (0, 1): JavelinaBottom,
@@ -244,23 +251,23 @@ class Javelina(Animal):
 
 
 class RingtailHead(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/ringtail_head.jpeg"
+    img = get_img("ringtail_head.jpeg")
 
 
 class RingtailBody(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/ringtail_body.jpeg"
+    img = get_img("ringtail_body.jpeg")
 
 
 class RingtailTail(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/ringtail_tail.jpeg"
+    img = get_img("ringtail_tail.jpeg")
 
 
 class RingtailTail2(Segment):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/ringtail_tail2.jpeg"
+    img = get_img("ringtail_tail2.jpeg")
 
 
 class Ringtail(Animal):
-    img = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/ringtail.png"
+    img = get_img("ringtail.png")
     cls_segments = {
         (0, 0): RingtailHead,
         (0, 1): RingtailBody,
@@ -317,7 +324,7 @@ class Board:
 
         pkl = pickle.loads(decompress(db_rep.get_bytes()))
         if pkl is None:
-            return cls()  # TODO this might be buggy :shrug:
+            return cls()
 
         new = cls()
 

@@ -343,7 +343,6 @@ class UserHomeScreen(Screen, ModelViewer):
         self.db_poll.bind(winner=self.announce_win)
 
     def announce_win(self, arg1, winner):
-        # TODO can both win and lose fit in here?
         self.incomplete_games.clear_widgets()
         self.incomplete_games.update_game_buttons(None, None)
         if App.get_running_app().sm.current_screen.name != "user_home":

@@ -1,3 +1,5 @@
+import importlib.resources
+
 import anvil.server
 import bcrypt
 from kivy.uix.behaviors import ButtonBehavior
@@ -22,7 +24,8 @@ class OppBoardBtn(Button, ModelUpdater):
         self.col = col
 
         self.default_bg = "atlas://data/images/defaulttheme/button"
-        self.shot_bg = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/green_check.png"
+        with importlib.resources.path("sonora.data", "green_check.png") as img_path:
+            self.shot_bg = str(img_path)
         self.text = f"{col}{str(row)}"
         self.square = None
         self.game.bind(opp_board=self.finish_init_after_board_load)
@@ -85,7 +88,8 @@ class YourBoardBtn(Button, ModelUpdater):
 
         self.text = f"{col}{str(row)}"
         self.square = None
-        self.shot_bg = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/x_mark.png"
+        with importlib.resources.path("sonora.data", "x_mark.png") as img_path:
+            self.shot_bg = str(img_path)
         self.game.bind(board=self.finish_init_after_board_load)
 
     def finish_init_after_board_load(self, instance, board):
@@ -294,7 +298,8 @@ class GotoCreateAccountBtn(Button, ModelUpdater):
         super(GotoCreateAccountBtn, self).__init__(**kwargs)
         self.text = "Create Account"
         self.color = (0, 0, 0, 1)
-        self.background_normal = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/mountains_watercolor1.png"
+        with importlib.resources.path("sonora.data", "mountains_watercolor1.png") as img_path:
+            self.background_normal = str(img_path)
 
     def on_press(self):
         switch_to_screen("create_account")
@@ -324,7 +329,8 @@ class GotoLoginScreenBtn(Button):
         super(GotoLoginScreenBtn, self).__init__(**kwargs)
         self.text = "Login"
         self.color = (0, 0, 0, 1)
-        self.background_normal = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/cactus_watercolor1.png"
+        with importlib.resources.path("sonora.data", "cactus_watercolor1.png") as img_path:
+            self.background_normal = str(img_path)
 
     def on_press(self):
         switch_to_screen("login")

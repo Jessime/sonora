@@ -128,7 +128,6 @@ class SetupBoardBtn(Button, ModelUpdater):
         """Return True if the selected animal can be placed in the this location on the board."""
         segments = self.game_setup.selected_animal_type.cls_segments
         for (rel_row, rel_col), seg in segments.items():
-            # TODO Add checking for filled square
             abs_row = self.row + rel_row
             try:
                 abs_col = COLS[COLS.find(self.col) + rel_col]
@@ -294,6 +293,8 @@ class GotoCreateAccountBtn(Button, ModelUpdater):
     def __init__(self, **kwargs):
         super(GotoCreateAccountBtn, self).__init__(**kwargs)
         self.text = "Create Account"
+        self.color = (0, 0, 0, 1)
+        self.background_normal = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/mountains_watercolor1.png"
 
     def on_press(self):
         switch_to_screen("create_account")
@@ -322,6 +323,8 @@ class GotoLoginScreenBtn(Button):
     def __init__(self, **kwargs):
         super(GotoLoginScreenBtn, self).__init__(**kwargs)
         self.text = "Login"
+        self.color = (0, 0, 0, 1)
+        self.background_normal = "/Users/jessime.kirk/Code/me/sonora2/sonora/data/cactus_watercolor1.png"
 
     def on_press(self):
         switch_to_screen("login")

@@ -9,13 +9,8 @@ from kivy.properties import BooleanProperty, ListProperty, NumericProperty, Obje
 from loguru import logger
 from more_itertools import only
 
+from sonora.data import get_img
 from sonora.static import COLS, SetupStatus, SetupStatusInternal, Status
-
-
-def get_img(name):
-    with importlib.resources.path("sonora.data", name) as img_path:
-        img = str(img_path)
-    return img
 
 
 class User(EventDispatcher):

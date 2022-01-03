@@ -3,3 +3,6 @@ ve/
 __pycache__/
 scratch*
 .venv/
+build/
+dist/
+.DS_Store

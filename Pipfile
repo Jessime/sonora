@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[requires]
+python_version = "3.9"
+
+[packages]
+requests = "~=2.26"
+anvil-uplink = "~=0.3"
+bcrypt = "~=3.2"
+kivy = {version = "~=2.0", extras = ["full"]}
+loguru = "~=0.5.3"
+more-itertools = "~=8.12.0"
+pyinstaller = "~=4.7"

@@ -8,6 +8,7 @@ def get_img(name):
     try:
         with importlib.resources.path("sonora.data", name) as img_path:
             img = str(img_path)
+            return img
     except ModuleNotFoundError:
         with importlib.resources.path("data", name) as img_path:
             img = Path("data")/name

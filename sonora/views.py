@@ -237,7 +237,7 @@ class Instructions(BoxLayout):
             "1. Click the animal you want to place.\n"
             "2. The valid squares for placing the animal will turn green.\n"
             "3. Click a tile on the board to choose the location.\n"
-            "    (The tile you click will be the top-left of the animal.)\n"
+            "   (The tile you click will be the bottom-left of the animal.)\n"
             "4. Click another tile if you want to relocate the animal.\n"
             "5. Click 'Next' when you are satisfied."
         )
@@ -300,9 +300,16 @@ class CreateGameScreen(SonoraScreen):
         self.username_space.add_widget(Label(text="Username:"))
         self.username = TextInput(multiline=False, write_tab=False)
         self.username_space.add_widget(self.username)
-        self.layout.add_widget(CreateGameBtn())
+        self.create_game_btn = CreateGameBtn()
+        self.layout.add_widget(self.create_game_btn)
         self.layout.add_widget(BackHomeScreenBtn())
         self.layout.add_widget(BoxLayout(size_hint=(1, 0.7)))
+        Window.bind(on_key_down=self._on_keyboard_down)
+
+    def _on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):
+        if self.is_current_screen and keycode == Key.ENTER.value:
+            logger.info("Enter key detected. Creating account.")
+            self.create_game_btn.on_press()
 
 
 class Greeting(Label, ModelViewer):

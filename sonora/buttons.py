@@ -266,6 +266,9 @@ class CreateGameBtn(Button, ModelUpdater):
 
     def on_press(self):
         opponent_name = self.parent.parent.username.text
+        if not opponent_name:
+            ErrorPopup(message="You must select a player to start a game with.").open()
+            return
         if self.user.username == opponent_name:
             ErrorPopup(message="You cannot start a game with yourself.").open()
             return
@@ -479,7 +482,7 @@ class TakeTurnBtn(Button, ModelUpdater):
     def __init__(self, **kwargs):
         super(TakeTurnBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
-        self.text = "Take Turn"
+        self.text = "Confirm"
         self.background_color = SonoraColor.SONORAN_SAGE.value
 
     def on_press(self):

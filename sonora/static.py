@@ -28,3 +28,8 @@ class Status(Enum):
     SETUP = "SETUP"
     ACTIVE = "ACTIVE"
     COMPLETE = "COMPLETE"
+
+
+class Key(Enum):
+    ENTER = 40
+

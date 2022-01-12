@@ -309,10 +309,25 @@ class CreateAccountBtn(Button, ModelUpdater):
     def update_model(self, username):
         self.user.username = username
 
+    @staticmethod
+    def validate_login(username, password):
+        """Basic sanity check for creating account"""
+        if not username:
+            msg = f"You must enter a username to create account."
+            ErrorPopup(msg).open()
+            return False
+        if not password:
+            msg = f"You must enter a password to create account."
+            ErrorPopup(msg).open()
+            return False
+        return True
+
     def on_press(self):
         inputs = self.parent.create_account_input_space
         username = inputs.username.text
         password = inputs.password.text
+        if not self.validate_login(username, password):
+            return
         hashed = bcrypt.hashpw(bytes(password, encoding="utf8"), bcrypt.gensalt())
         anvil.server.call("create_account", username, hashed.decode("utf-8"))
         logger.info(f"Created new account for {username}")
@@ -343,6 +358,19 @@ class LoginBtn(Button, ModelUpdater):
     def get_games(self, username):
         pass
 
+    @staticmethod
+    def validate_login(username, password):
+        """Basic sanity check for login"""
+        if not username:
+            msg = f"You must enter a username to login."
+            ErrorPopup(msg).open()
+            return False
+        if not password:
+            msg = f"You must enter a password to login."
+            ErrorPopup(msg).open()
+            return False
+        return True
+
     def login(self, username, password):
         password = bytes(password, encoding="utf8")
         pass_hash = anvil.server.call("get_pass_hash", username)
@@ -359,7 +387,9 @@ class LoginBtn(Button, ModelUpdater):
 
     def on_press(self):
         inputs = self.parent.login_input_space
-        self.login(username=inputs.username.text, password=inputs.password.text)
+        validated = self.validate_login(username=inputs.username.text, password=inputs.password.text)
+        if validated:
+            self.login(username=inputs.username.text, password=inputs.password.text)
         self.get_games(inputs.username.text)
 
 

@@ -5,6 +5,8 @@ from kivy.uix.gridlayout import GridLayout
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.textinput import TextInput
+from kivy.core.window import Window
+from loguru import logger
 
 from sonora.buttons import (
     AnimalButton,
@@ -29,7 +31,7 @@ from sonora.buttons import (
 )
 from sonora.buttons_dir.updater import switch_to_screen
 from sonora.popups import NotificationPopup
-from sonora.static import COLS, SonoraColor, Status
+from sonora.static import COLS, SonoraColor, Status, Key
 
 
 def set_background_color(label, color):
@@ -73,6 +75,18 @@ class ModelViewer:
         # If I actually run into a bug based on this, I'll figure out enforcement around "View Only"
 
 
+class SonoraScreen(Screen):
+    """Base class for screens, conveying functionality we want all our screens to have."""
+
+    def __init__(self, **kwargs):
+        super(SonoraScreen, self).__init__(**kwargs)
+
+    @property
+    def is_current_screen(self):
+        current_screen = App.get_running_app().sm.current_screen.name
+        return current_screen == self.name
+
+
 class GameStateHeader(Label, ModelViewer):
     def __init__(self, **kwargs):
         super(GameStateHeader, self).__init__(**kwargs)
@@ -113,7 +127,7 @@ class GameBtnRow(GridLayout):
         self.add_widget(take_action_btn())
 
 
-class OppBoardScreen(Screen):
+class OppBoardScreen(SonoraScreen):
     """A place where you can see the state of your board."""
 
     def __init__(self, **kwargs):
@@ -135,7 +149,7 @@ class OuterYourBoardArea(GridLayout):
             self.add_widget(child)
 
 
-class YourBoardScreen(Screen):
+class YourBoardScreen(SonoraScreen):
     """A place where you can see the state of your board."""
 
     def __init__(self, **kwargs):
@@ -274,7 +288,7 @@ class SetupGameScreen(Screen, ModelViewer):
         self.layout.add_widget(NextOrReset())
 
 
-class CreateGameScreen(Screen):
+class CreateGameScreen(SonoraScreen):
     def __init__(self, **kwargs):
         super(CreateGameScreen, self).__init__(**kwargs)
         self.name = "create_game"
@@ -284,7 +298,7 @@ class CreateGameScreen(Screen):
         self.username_space = BoxLayout(orientation="horizontal", size_hint=(1, 0.1))
         self.layout.add_widget(self.username_space)
         self.username_space.add_widget(Label(text="Username:"))
-        self.username = TextInput(multiline=False)
+        self.username = TextInput(multiline=False, write_tab=False)
         self.username_space.add_widget(self.username)
         self.layout.add_widget(CreateGameBtn())
         self.layout.add_widget(BackHomeScreenBtn())
@@ -326,7 +340,7 @@ class IncompleteGames(GridLayout, ModelViewer):
             self.add_widget(game_btn)
 
 
-class UserHomeScreen(Screen, ModelViewer):
+class UserHomeScreen(SonoraScreen, ModelViewer):
     """Display all the ongoing games a user currently has."""
 
     def __init__(self, **kwargs):
@@ -345,7 +359,7 @@ class UserHomeScreen(Screen, ModelViewer):
     def announce_win(self, arg1, winner):
         self.incomplete_games.clear_widgets()
         self.incomplete_games.update_game_buttons(None, None)
-        if App.get_running_app().sm.current_screen.name != "user_home":
+        if self.is_current_screen:
             switch_to_screen("user_home")
         if winner == self.user.username:
             msg = ("CONGRATULATIONS!\n"
@@ -364,10 +378,10 @@ class UsernamePassword(GridLayout):
         super(UsernamePassword, self).__init__(**kwargs)
         self.cols = 2
         self.add_widget(Label(text="Username:"))
-        self.username = TextInput(multiline=False)
+        self.username = TextInput(multiline=False, write_tab=False)
         self.add_widget(self.username)
         self.add_widget(Label(text="Password:"))
-        self.password = TextInput(password=True, multiline=False)
+        self.password = TextInput(password=True, multiline=False, write_tab=False)
         self.add_widget(self.password)
 
 
@@ -377,7 +391,8 @@ class LoginSpace(BoxLayout):
         self.orientation = "vertical"
         self.login_input_space = UsernamePassword()
         self.add_widget(self.login_input_space)
-        self.add_widget(LoginBtn())
+        self.login_btn = LoginBtn()
+        self.add_widget(self.login_btn)
 
 
 class CreateAccountSpace(BoxLayout):
@@ -386,10 +401,11 @@ class CreateAccountSpace(BoxLayout):
         self.orientation = "vertical"
         self.create_account_input_space = UsernamePassword()
         self.add_widget(self.create_account_input_space)
-        self.add_widget(CreateAccountBtn())
+        self.create_account_btn = CreateAccountBtn()
+        self.add_widget(self.create_account_btn)
 
 
-class LoginScreen(Screen):
+class LoginScreen(SonoraScreen):
     def __init__(self, **kwargs):
         super(LoginScreen, self).__init__(**kwargs)
         self.name = "login"
@@ -400,9 +416,15 @@ class LoginScreen(Screen):
         self.layout.add_widget(BackStartScreenBtn())
         blank_space = BoxLayout(size_hint=(1, 0.7))
         self.layout.add_widget(blank_space)
+        Window.bind(on_key_down=self._on_keyboard_down)
+
+    def _on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):
+        if self.is_current_screen and keycode == Key.ENTER.value:
+            logger.info("Enter key detected. Logging in.")
+            self.login_space.login_btn.on_press()
 
 
-class CreateAccountScreen(Screen):
+class CreateAccountScreen(SonoraScreen):
     def __init__(self, **kwargs):
         super(CreateAccountScreen, self).__init__(**kwargs)
         self.name = "create_account"
@@ -413,9 +435,15 @@ class CreateAccountScreen(Screen):
         self.layout.add_widget(BackStartScreenBtn())
         blank_space = BoxLayout(size_hint=(1, 0.7))
         self.layout.add_widget(blank_space)
+        Window.bind(on_key_down=self._on_keyboard_down)
+
+    def _on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):
+        if self.is_current_screen and keycode == Key.ENTER.value:
+            logger.info("Enter key detected. Creating account.")
+            self.create_account_space.create_account_btn.on_press()
 
 
-class StartScreen(Screen):
+class StartScreen(SonoraScreen):
     def __init__(self, **kwargs):
         super(StartScreen, self).__init__(**kwargs)
         self.name = "start"

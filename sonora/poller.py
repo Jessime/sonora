@@ -2,7 +2,7 @@
 import anvil
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.properties import StringProperty
+from kivy.properties import BooleanProperty, StringProperty
 from kivy.event import EventDispatcher
 from loguru import logger
 
@@ -10,25 +10,27 @@ from loguru import logger
 class DBPoll(EventDispatcher):
     """Methods in this class can directly update the model."""
 
-    # We want to be able to announce a winner from some game,
+    # We want to be able to announce a winner from some game
     winner = StringProperty()
+    polled_opp_finish_turn = BooleanProperty(defaultvalue=False)
 
     def __init__(self, game, user, **kwargs):
         super(DBPoll, self).__init__(**kwargs)
         self.game = game
         self.user = user
 
-        Clock.schedule_interval(self.fetch_turn_updates, 2)
-        Clock.schedule_interval(self.scan_for_losses_on_home_screen, 2)
-        Clock.schedule_interval(self.scan_for_new_games_on_home_screen, 2)
+        Clock.schedule_interval(self.fetch_turn_updates, 3)
+        Clock.schedule_interval(self.scan_for_losses_on_home_screen, 3)
+        Clock.schedule_interval(self.scan_for_new_games_on_home_screen, 3)
 
     def fetch_turn_updates(self, arg1):
         """If it isn't your turn, poll to see if it has become your turn."""
         empty_game = self.game.db_rep is None
         if empty_game:
-            return None
+            return
         if self.game.your_turn:
             return
+        self.game.db_rep.update()
         fresh_turn = self.game.db_rep["turn"]
         game_over = fresh_turn is None
         if game_over:
@@ -37,6 +39,7 @@ class DBPoll(EventDispatcher):
                 raise ValueError("It should never be nobody's turn but there isn't a winner. Tell Jessime.")
             self.game.winner = winner["username"]
         self.game.your_turn = fresh_turn["username"] == self.game.your_name
+        self.polled_opp_finish_turn = self.game.your_turn
 
     def scan_for_losses_on_home_screen(self, arg1):
         """If sitting on the home screen, make sure user hasn't lost any games"""

@@ -362,6 +362,7 @@ class UserHomeScreen(SonoraScreen, ModelViewer):
         self.layout.add_widget(GotoCreateGameBtn())
         self.game.bind(winner=self.announce_win)
         self.db_poll.bind(winner=self.announce_win)
+        self.db_poll.bind(polled_opp_finish_turn=self.announce_your_turn)
 
     def announce_win(self, arg1, winner):
         self.incomplete_games.clear_widgets()
@@ -378,6 +379,16 @@ class UserHomeScreen(SonoraScreen, ModelViewer):
                    f"You've lost your game to {winner}.\n"
                    "Better luck next time.")
         NotificationPopup(msg).open()
+
+    def announce_your_turn(self, arg1, polled_opp_finish_turn):
+        """Even though this is tied to the UserHomeScreen, let's have the popup show on any screen.
+
+        Additionally, it makes sense to tie it to UserHomeScreen since, if you are playing a game,
+        and then go back to the home screen, that game is still 'active' in the Game model.
+        """
+        logger.info("It's your turn")
+        if polled_opp_finish_turn:
+            NotificationPopup(f"{self.game.opponent} has taken their turn.").open()
 
 
 class UsernamePassword(GridLayout):

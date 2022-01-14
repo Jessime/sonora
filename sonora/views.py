@@ -295,7 +295,7 @@ class CreateGameScreen(SonoraScreen):
         self.layout = BoxLayout(orientation="vertical")
         self.add_widget(self.layout)
         self.layout.add_widget(Label(text="Select the player to challenge", size_hint=(1, 0.1)))
-        self.username_space = BoxLayout(orientation="horizontal", size_hint=(1, 0.1))
+        self.username_space = BoxLayout(orientation="horizontal", size_hint=(1, 0.05))
         self.layout.add_widget(self.username_space)
         self.username_space.add_widget(Label(text="Username:"))
         self.username = TextInput(multiline=False, write_tab=False)
@@ -303,7 +303,7 @@ class CreateGameScreen(SonoraScreen):
         self.create_game_btn = CreateGameBtn()
         self.layout.add_widget(self.create_game_btn)
         self.layout.add_widget(BackHomeScreenBtn())
-        self.layout.add_widget(BoxLayout(size_hint=(1, 0.7)))
+        self.layout.add_widget(BoxLayout(size_hint=(1, 0.75)))
         Window.bind(on_key_down=self._on_keyboard_down)
 
     def _on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):

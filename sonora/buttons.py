@@ -305,6 +305,7 @@ class CreateAccountBtn(Button, ModelUpdater):
     def __init__(self, **kwargs):
         super(CreateAccountBtn, self).__init__(**kwargs)
         self.text = "Create Account"
+        self.background_color = SonoraColor.SONORAN_SAGE.value
 
     def update_model(self, username):
         self.user.username = username
@@ -350,6 +351,7 @@ class LoginBtn(Button, ModelUpdater):
     def __init__(self, **kwargs):
         super(LoginBtn, self).__init__(**kwargs)
         self.text = "Login"
+        self.background_color = SonoraColor.SONORAN_SAGE.value
 
     def update_model(self, username, games):
         self.user.username = username
@@ -398,6 +400,7 @@ class BackStartScreenBtn(Button):
         super(BackStartScreenBtn, self).__init__(**kwargs)
         self.size_hint = (1, 0.1)
         self.text = "Back"
+        self.background_color = SonoraColor.SEDONA_SUNSET.value
 
     def on_press(self):
         switch_to_screen("start", "right")

@@ -20,11 +20,23 @@ class DBPoll(EventDispatcher):
         self.user = user
 
         Clock.schedule_interval(self.fetch_turn_updates, 3)
-        Clock.schedule_interval(self.scan_for_losses_on_home_screen, 3)
-        Clock.schedule_interval(self.scan_for_new_games_on_home_screen, 3)
+        Clock.schedule_interval(self.scan_for_losses_on_home_screen, 5)
+        Clock.schedule_interval(self.scan_for_new_games_on_home_screen, 5)
+
+        self.bind(polled_opp_finish_turn=self.game.resolve_turn_updates)
+
+    def handle_win(self):
+        """Do some sanity checking, then notify everything that there's been a win."""
+        winner = self.game.db_rep["winner"]
+        if winner is None:
+            raise ValueError("It should never be nobody's turn but there isn't a winner. Tell Jessime.")
+        self.game.winner = winner["username"]
 
     def fetch_turn_updates(self, arg1):
-        """If it isn't your turn, poll to see if it has become your turn."""
+        """If it isn't your turn, poll to see if it has become your turn.
+
+        Note: this function has a lot of early exits.
+        """
         empty_game = self.game.db_rep is None
         if empty_game:
             return
@@ -33,11 +45,11 @@ class DBPoll(EventDispatcher):
         self.game.db_rep.update()
         fresh_turn = self.game.db_rep["turn"]
         game_over = fresh_turn is None
+
         if game_over:
-            winner = self.game.db_rep["winner"]
-            if winner is None:
-                raise ValueError("It should never be nobody's turn but there isn't a winner. Tell Jessime.")
-            self.game.winner = winner["username"]
+            self.handle_win()
+            return
+
         self.game.your_turn = fresh_turn["username"] == self.game.your_name
         self.polled_opp_finish_turn = self.game.your_turn
 
@@ -49,7 +61,7 @@ class DBPoll(EventDispatcher):
             for db_rep in self.user.game_rows:
                 winner = db_rep["winner"]
                 if winner is not None:
-                    self.winner = winner
+                    self.winner = winner["username"]
                     found_loss = True
             if found_loss:
                 self.user.game_rows = remainder

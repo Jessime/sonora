@@ -1,4 +1,3 @@
-import importlib.resources
 import pickle
 from enum import Enum
 from gzip import compress, decompress
@@ -287,13 +286,13 @@ class Square(EventDispatcher):
     A Square can only contain one object at a time.
     This is mostly for simplicity.
     1. It's how Battleship does it.
-    2. There's no good way to represent multiple objects on a square at the same time.
+    2. There's no good way to visualize multiple objects on a square at the same time.
     """
 
     obj = ObjectProperty(allownone=True)
 
     def __repr__(self):
-        return "" if self.obj is None else str(self.obj)
+        return "Square[Empty]" if self.obj is None else str(self.obj)
 
 
 class Board:
@@ -302,9 +301,22 @@ class Board:
         self.contents = []
 
     def __add__(self, board_obj):
-        self.grid[board_obj.loc].obj = board_obj
+        if hasattr(board_obj, "segments"):
+            for seg in board_obj.segments:
+                self.grid[seg.loc].obj = seg
+        else:
+            self.grid[board_obj.loc].obj = board_obj
         self.contents.append(board_obj)
         logger.info(f"Added {board_obj} to board.")
+
+    def __sub__(self, board_obj):
+        if hasattr(board_obj, "segments"):
+            for seg in board_obj.segments:
+                self.grid[seg.loc].obj = None
+        else:
+            self.grid[board_obj.loc].obj = None
+        self.contents.remove(board_obj)
+        logger.info(f"Removed {board_obj} from board.")
 
     @staticmethod
     def init_grid():
@@ -316,7 +328,6 @@ class Board:
 
     @classmethod
     def deserialize(cls, db_rep):
-
         pkl = pickle.loads(decompress(db_rep.get_bytes()))
         if pkl is None:
             return cls()
@@ -346,18 +357,12 @@ class Board:
         return simple_board
 
     def clear_of_types(self, types):
-        """Remove all instances of one or more types from the board."""
+        """Remove the only instance of one or more types from the board."""
         existing = only((a for a in self.contents if isinstance(a, types)))
         if existing is None:
             logger.info(f"There are no {types} on the board yet.")
         else:
-            logger.info(f"Removing {existing} from board.")
-            if hasattr(existing, "segments"):
-                for seg in existing.segments:
-                    self.grid[seg.loc].obj = None
-            else:
-                self.grid[existing.loc].obj = None
-            self.contents.remove(existing)
+            self - existing
 
     def photo_to_shot_or_miss(self):
         """A weird func that resolves a photo into a permanent shot-or-miss.
@@ -372,7 +377,7 @@ class Board:
         2. Replace the original segment to the grid and mark it as shot.
         """
         photo = only((a for a in self.contents if isinstance(a, Photo)))
-        self.contents.remove(photo)
+        self - photo
 
         def try_find_match(contents):
             """brute force check if any segments were in the spot"""
@@ -388,6 +393,17 @@ class Board:
         else:
             match.shot = True
             self.grid[photo.loc].obj = match
+
+    def perform_surgery(self, new_seg, og_seg):
+        """Update an animal that was shot on opps turn.
+
+        This name is intentionally dramatic because we have to do some hacks.
+        I want to trigger an update of the image, which means I need a new object id.
+        And I also want to object id to stay consistent inside the animal.
+        """
+        animal = og_seg.animal_backref(self)
+        animal.segments = [new_seg if s.loc == new_seg.loc else s for s in animal.segments]
+        self.grid[new_seg.loc].obj = new_seg
 
 
 class GameSetup(EventDispatcher):
@@ -501,6 +517,34 @@ class Game(EventDispatcher):
             self.setup_status = SetupStatus.COMPLETE
         else:
             raise ValueError(f"{fresh_setup_status} is not a valid setup status.")
+
+    def resolve_turn_updates(self, arg1, arg2):
+        """Called when your opp finishes a turn.
+
+        Note: it already been verified that they haven't won.
+        At this point, the only thing left to do is to deserialize your new board.
+        This takes a little bit of effort because we need to make sure the correct view is applied to your board.
+        We hunt down what changed, and update that square.
+        There are only two possibilities:
+
+        1. A hit
+        2. A miss
+        """
+        new_board = Board.deserialize(self.db_rep[self.your_board_col_label])
+        for obj in new_board.contents[::-1]:  # Most likely case is a miss
+            if hasattr(obj, "segments"):
+                for seg in obj.segments:
+                    if not seg.shot:
+                        continue
+                    og_seg = self.board.grid[seg.loc].obj
+                    if not og_seg.shot:
+                        self.board.perform_surgery(seg, og_seg)
+                        break
+            else:
+                is_new_obj = self.board.grid[obj.loc].obj is None
+                if is_new_obj:
+                    self.board + obj
+                    break
 
     def check_for_win(self):
         """Returns True if all Animals have been shot.

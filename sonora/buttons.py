@@ -176,10 +176,7 @@ class SetupBoardBtn(Button, ModelUpdater):
            (If it's the same animal, this results in a 'move'.)
         """
         self.game_setup.board.clear_of_types(self.game_setup.avail_types)
-        logger.info(f"Placing {new_animal}.")
-        for seg in new_animal.segments:
-            self.game_setup.board.grid[(seg.row, seg.col)].obj = seg
-        self.game_setup.board.contents.append(new_animal)
+        self.game_setup.board + new_animal
         logger.info(self.game_setup.board.contents)
 
     def on_press(self):

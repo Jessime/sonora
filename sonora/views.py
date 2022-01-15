@@ -6,6 +6,8 @@ from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.textinput import TextInput
 from kivy.core.window import Window
+from kivy.uix.image import Image
+
 from loguru import logger
 
 from sonora.buttons import (
@@ -29,6 +31,7 @@ from sonora.buttons import (
     SetupBoardBtn,
     YourBoardBtn,
 )
+from sonora.data import get_img
 from sonora.buttons_dir.updater import switch_to_screen
 from sonora.popups import NotificationPopup
 from sonora.static import COLS, SonoraColor, Status, Key
@@ -432,8 +435,10 @@ class LoginScreen(SonoraScreen):
         self.login_space = LoginSpace(size_hint=(1, 0.2))
         self.layout.add_widget(self.login_space)
         self.layout.add_widget(BackStartScreenBtn())
-        blank_space = BoxLayout(size_hint=(1, 0.7))
-        self.layout.add_widget(blank_space)
+        self.blank_space = BoxLayout(size_hint=(1, 0.7))
+        self.layout.add_widget(self.blank_space)
+        self.bg = Image(source=get_img("antelope-canyon-page-az.jpeg"), allow_stretch=True, keep_ratio=False)
+        self.blank_space.add_widget(self.bg)
         Window.bind(on_key_down=self._on_keyboard_down)
 
     def _on_keyboard_down(self, instance, keyboard, keycode, text, modifiers):

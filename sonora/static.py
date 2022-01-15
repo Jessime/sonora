@@ -13,8 +13,8 @@ class SonoraColor(Enum):
     DESERT_RAIN = (0.3216, 0.6392, 1.0, 1)
 
 class SetupStatusInternal(Enum):
-    PLAYER1 = "PLAYER1"
-    PLAYER2 = "PLAYER2"
+    PLAYER1_DONE = "PLAYER1_DONE"
+    PLAYER2_DONE = "PLAYER2_DONE"
 
 
 class SetupStatus(Enum):

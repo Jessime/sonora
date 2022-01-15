@@ -469,7 +469,8 @@ class Game(EventDispatcher):
             return SetupStatus.NEITHER
         if self.db_rep["setup_status"] == SetupStatus.COMPLETE.value:
             return SetupStatus.COMPLETE
-        just_you_done = self.db_rep["setup_status"] == SetupStatusInternal.PLAYER1.value and self.you_are_p1
+        just_you_done = (self.db_rep["setup_status"] == SetupStatusInternal.PLAYER1_DONE.value and self.you_are_p1 or
+                         self.db_rep["setup_status"] == SetupStatusInternal.PLAYER2_DONE.value and not self.you_are_p1)
         if just_you_done:
             return SetupStatus.YOU_DONE_OPP_NOT
         return SetupStatus.OPP_DONE_YOU_NOT
@@ -496,9 +497,9 @@ class Game(EventDispatcher):
 
     def commit_setup_status(self, _, setup_status):
         if setup_status == SetupStatus.YOU_DONE_OPP_NOT and self.you_are_p1:
-            self.db_rep["setup_status"] = SetupStatusInternal.PLAYER1.value
+            self.db_rep["setup_status"] = SetupStatusInternal.PLAYER1_DONE.value
         elif setup_status == SetupStatus.YOU_DONE_OPP_NOT and not self.you_are_p1:
-            self.db_rep["setup_status"] = SetupStatusInternal.PLAYER2.value
+            self.db_rep["setup_status"] = SetupStatusInternal.PLAYER2_DONE.value
         elif setup_status == SetupStatus.COMPLETE:
             self.db_rep["setup_status"] = SetupStatus.COMPLETE.value
         else:

@@ -37,9 +37,9 @@ def create_game(username, opponent_name):
     opponent = app_tables.users.get(username=opponent_name)
     if opponent is None:
         return "This player does not exist in our database. Please try again."
-    existing_game = app_tables.games.get(player1=user, player2=opponent)
+    existing_game = app_tables.games.get(player1=user, player2=opponent, status=q.not_(Status.COMPLETE.value))
     if existing_game is not None:
-        return "A game between you and this player already exists."
+        return f"An active game between you and {opponent_name} already exists."
 
     return app_tables.games.add_row(
         player1=user,

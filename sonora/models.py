@@ -18,9 +18,7 @@ class User(EventDispatcher):
     username = StringProperty("")
     game_rows = ListProperty([])  # These are <LiveObject: anvil.tables.Row>
 
-    def on_username(self, a, b):
-        print(type(a), a)
-        print(type(b), b)
+    def on_username(self, arg1, arg2):
         return self.username
 
 
@@ -300,6 +298,8 @@ class Board:
         self.grid = self.init_grid()
         self.contents = []
 
+        self.full_animal_just_shot = None  # Note that Game has same attribute, since it's an EventDispatcher
+
     def __add__(self, board_obj):
         if hasattr(board_obj, "segments"):
             for seg in board_obj.segments:
@@ -364,6 +364,15 @@ class Board:
         else:
             self - existing
 
+    def set_full_animal_shot(self, seg):
+        """This gets triggered immediately after an animal is shot and will be consumed by the Game
+
+        "Consumed" here means that `full_animal_just_shot` will quickly get set back to `None`.
+        """
+        animal = seg.animal_backref(self)
+        if animal.shot:
+            self.full_animal_just_shot = animal
+
     def photo_to_shot_or_miss(self):
         """A weird func that resolves a photo into a permanent shot-or-miss.
 
@@ -393,6 +402,7 @@ class Board:
         else:
             match.shot = True
             self.grid[photo.loc].obj = match
+            self.set_full_animal_shot(match)
 
     def perform_surgery(self, new_seg, og_seg):
         """Update an animal that was shot on opps turn.
@@ -436,11 +446,11 @@ class Game(EventDispatcher):
     status = ObjectProperty()
     your_turn = BooleanProperty(defaultvalue=None)
     winner = StringProperty()
+    full_animal_just_shot = ObjectProperty(defaultvalue=None, allownone=True)
 
     def __init__(self, db_rep=None, user=None, **kwargs):
         super(Game, self).__init__(**kwargs)
         Game._instance_count += 1
-        logger.info(f"Called Game __init__ {Game._instance_count} times.")
         if db_rep is None or user is None:
             if Game._instance_count == 1:
                 logger.info("Created first (and only temporarily empty) Game instance")
@@ -510,7 +520,6 @@ class Game(EventDispatcher):
         self.your_turn = False
 
     def notify_of_setup_finished(self):
-        # TODO if I generalize polling for updates, remove this.
         fresh_setup_status = self.fetch_setup_status()  # in case your opp finished while you were messing around
         if fresh_setup_status == SetupStatus.NEITHER:
             self.setup_status = SetupStatus.YOU_DONE_OPP_NOT
@@ -546,6 +555,15 @@ class Game(EventDispatcher):
                 if is_new_obj:
                     self.board + obj
                     break
+
+    def resolve_full_animal_just_shot(self):
+        """If the last segment in an animal is shot, we need to notify the board view to update other squares."""
+        animal = self.opp_board.full_animal_just_shot
+        if animal is not None:
+            self.full_animal_just_shot = animal
+            # Cleanup
+            self.full_animal_just_shot = None
+            self.opp_board.full_animal_just_shot = None
 
     def check_for_win(self):
         """Returns True if all Animals have been shot.

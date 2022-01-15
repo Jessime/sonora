@@ -61,6 +61,7 @@ class TakeTurnConfirmBtn(ConfirmBtn, ModelUpdater):
 
     def update_model(self, **kwargs):
         self.game.opp_board.photo_to_shot_or_miss()
+        self.game.resolve_full_animal_just_shot()
         self.game.commit_opp_board(None, self.game.opp_board)
         if self.game.check_for_win():
             self.game.set_win_state()

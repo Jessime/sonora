@@ -183,7 +183,7 @@ class SetupBoardBtn(Button, ModelUpdater):
         if self.game_setup.selected_animal_type is None:
             logger.info("No animal selected.")
         elif self.is_valid_loc():
-            print(self.game_setup.selected_animal_type)
+            logger.info(self.game_setup.selected_animal_type)
             new_animal = self.game_setup.selected_animal_type(self.row, self.col)
             self.update_model(new_animal)
         else:
@@ -220,7 +220,9 @@ class ResumeGameBtn(Button, ModelUpdater):
     def __init__(self, game_row, **kwargs):
         super(ResumeGameBtn, self).__init__(**kwargs)
         self.game_for_btn = Game(game_row, self.user)  # Don't populate `self.game` quite yet
-        self.text = f"Resume Game with {self.game_for_btn.opponent}.\n" f"(Status: {self.game_for_btn.status.value})"
+        self.text = (f"Resume Game with {self.game_for_btn.opponent}.\n" 
+                     f"(Status: {self.game_for_btn.status.value})\n"
+                     )
 
     def update_model(self):
         """Populate the "global" `self.game`"""

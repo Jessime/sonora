@@ -112,12 +112,24 @@ class GameStateHeader(Label, ModelViewer):
         self.text = msg
 
 
-class OuterOppBoardArea(GridLayout):
+class OuterOppBoardArea(GridLayout, ModelViewer):
     def __init__(self, **kwargs):
         super(OuterOppBoardArea, self).__init__(**kwargs)
         self.cols = 11
+        self.grid = {}
         for child in board_view_generator(OppBoardBtn):
+            if isinstance(child, OppBoardBtn):
+                self.grid[(child.row, child.col)] = child
             self.add_widget(child)
+        self.game.bind(full_animal_just_shot=self.reveal_animal)
+
+    def reveal_animal(self, instance, animal):
+        """When the last segment of an animal is shot, reveal the entire animal."""
+        if animal is None:
+            return
+        for seg in animal.segments:
+            btn = self.grid[seg.loc]
+            btn.update_bg_img(None, seg)
 
 
 class GameBtnRow(GridLayout):
@@ -370,7 +382,7 @@ class UserHomeScreen(SonoraScreen, ModelViewer):
     def announce_win(self, arg1, winner):
         self.incomplete_games.clear_widgets()
         self.incomplete_games.update_game_buttons(None, None)
-        if self.is_current_screen:
+        if not self.is_current_screen:
             switch_to_screen("user_home")
         if winner == self.user.username:
             msg = ("CONGRATULATIONS!\n"

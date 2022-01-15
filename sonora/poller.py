@@ -20,7 +20,7 @@ class DBPoll(EventDispatcher):
         self.user = user
 
         Clock.schedule_interval(self.fetch_turn_updates, 3)
-        Clock.schedule_interval(self.scan_for_losses_on_home_screen, 5)
+        Clock.schedule_interval(self.scan_for_state_transitions_on_home_screen, 5)
         Clock.schedule_interval(self.scan_for_new_games_on_home_screen, 5)
 
         self.bind(polled_opp_finish_turn=self.game.resolve_turn_updates)
@@ -35,7 +35,9 @@ class DBPoll(EventDispatcher):
     def fetch_turn_updates(self, arg1):
         """If it isn't your turn, poll to see if it has become your turn.
 
-        Note: this function has a lot of early exits.
+        Notes:
+            1. This func has a lot of early exits.
+            2. This func is bound to a popup that shows on any screen.
         """
         empty_game = self.game.db_rep is None
         if empty_game:
@@ -53,18 +55,31 @@ class DBPoll(EventDispatcher):
         self.game.your_turn = fresh_turn["username"] == self.game.your_name
         self.polled_opp_finish_turn = self.game.your_turn
 
-    def scan_for_losses_on_home_screen(self, arg1):
-        """If sitting on the home screen, make sure user hasn't lost any games"""
+    def scan_for_state_transitions_on_home_screen(self, arg1):
+        """If sitting on the home screen, poll for state changes.
+
+        This checks for two transitions:
+
+        1. SETUP -> ACTIVE
+        2. ACTIVE -> COMPLETE
+
+        Note: this was originally more complicated, but why not just always refresh?
+        The game has nothing else going on.
+        """
         if App.get_running_app().sm.current_screen.name != "user_home":
-            remainder = []
-            found_loss = False
-            for db_rep in self.user.game_rows:
-                winner = db_rep["winner"]
-                if winner is not None:
-                    self.winner = winner["username"]
-                    found_loss = True
-            if found_loss:
-                self.user.game_rows = remainder
+            return
+
+        remainder = []
+        for db_rep in self.user.game_rows:
+            db_rep.update()
+            winner = db_rep["winner"]
+            if winner is not None:
+                self.winner = winner["username"]
+            else:
+                remainder.append(db_rep)
+
+        self.user.game_rows = []
+        self.user.game_rows = remainder
 
     def scan_for_new_games_on_home_screen(self, arg1):
         """If sitting on the home screen, look for new games"""

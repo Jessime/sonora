@@ -156,6 +156,56 @@ class Animal:
         return new
 
 
+class FlycatcherMale(Segment):
+    img = get_img("vermilion_flycatcher_male.jpeg")
+
+    def __init__(self, row, col):
+        super(FlycatcherMale, self).__init__(row, col)
+
+
+class FlycatcherFemale(Segment):
+    img = get_img("vermilion_flycatcher_female.jpeg")
+
+    def __init__(self, row, col):
+        super(FlycatcherFemale, self).__init__(row, col)
+
+
+class Flycatcher(Animal):
+    img = get_img("vermilion_flycatcher.jpeg")
+    cls_segments = {
+        (0, 0): FlycatcherMale,
+        (0, 1): FlycatcherFemale,
+    }
+
+    def __init__(self, base_row, base_col):
+        super(Flycatcher, self).__init__(base_row, base_col)
+
+
+class PyrrhuloxiaHead(Segment):
+    img = get_img("pyrrhuloxia_head.jpeg")
+
+    def __init__(self, row, col):
+        super(PyrrhuloxiaHead, self).__init__(row, col)
+
+
+class PyrrhuloxiaBody(Segment):
+    img = get_img("pyrrhuloxia_body.jpeg")
+
+    def __init__(self, row, col):
+        super(PyrrhuloxiaBody, self).__init__(row, col)
+
+
+class Pyrrhuloxia(Animal):
+    img = get_img("pyrrhuloxia.jpeg")
+    cls_segments = {
+        (0, 0): PyrrhuloxiaBody,
+        (-1, 0): PyrrhuloxiaHead,
+    }
+
+    def __init__(self, base_row, base_col):
+        super(Pyrrhuloxia, self).__init__(base_row, base_col)
+
+
 class SnakeHead(Segment):
     img = get_img("snake_head.jpeg")
 
@@ -272,6 +322,8 @@ class Ringtail(Animal):
 
 
 class AnimalTypes(Enum):
+    FLYCATCHER = Flycatcher
+    PYRRHULOXIA = Pyrrhuloxia
     SNAKE = Snake
     CENTIPEDE = Centipede
     JAVELINA = Javelina
@@ -422,6 +474,7 @@ class GameSetup(EventDispatcher):
     active_page = NumericProperty()
     is_first_player = BooleanProperty(False)
     pages: tuple[tuple[AnimalTypes]] = (
+        (AnimalTypes.FLYCATCHER, AnimalTypes.PYRRHULOXIA),
         (AnimalTypes.SNAKE, AnimalTypes.CENTIPEDE),
         (AnimalTypes.JAVELINA, AnimalTypes.RINGTAIL),
     )  # TODO add other tuples

@@ -40,8 +40,8 @@ class FinishSetupConfirmBtn(ConfirmBtn, ModelUpdater):
         super(FinishSetupConfirmBtn, self).__init__(**kwargs)
 
     def update_model(self, **kwargs):
-        self.game.notify_of_setup_finished()
         self.game.board = self.game_setup.board
+        self.game.notify_of_setup_finished()
         if self.game.setup_status == SetupStatus.COMPLETE:
             self.game.status = Status.ACTIVE
 

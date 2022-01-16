@@ -7,7 +7,7 @@ from loguru import logger
 from more_itertools import only
 
 from sonora.buttons_dir.updater import ModelUpdater, switch_to_screen
-from sonora.models import Game, Segment, SetupStatus, Photo
+from sonora.models import Game, Segment, SetupStatus, Photo, Square
 from sonora.popups import ErrorPopup, FinishSetupConfirmation, NextSetupPageConfirmation, TakeTurnConfirmation, ExitSetupConfirmation
 from sonora.static import COLS, SonoraColor
 from sonora.data import get_img
@@ -87,15 +87,22 @@ class YourBoardBtn(Button, ModelUpdater):
         self.text = f"{col}{str(row)}"
         self.square = None
         self.shot_bg = get_img("x_mark.png")
-        self.game.bind(board=self.finish_init_after_board_load)
+        self.game.bind(setup_status=self.populate_board_view)
 
-    def finish_init_after_board_load(self, instance, board):
-        # FIXME Something's going wrong here with displaying the your board when you don't close out after setup.
-        if self.square is not None:  # We only need to do this once, not everytime the board changes
+    def populate_board_view(self, instance, setup_status):
+        """We can arrive here from two different routes:
+
+        1. Resuming a game
+        2. Having just finished setting up a game
+
+        If the latter is true, we need to properly transfer the game_setup board to the game_board.
+        That means clearing the bindings to the setup board.
+        """
+        if setup_status != SetupStatus.COMPLETE:
             return
-        self.square = board.grid[(self.row, self.col)]
+        og_square = self.game.board.grid[(self.row, self.col)]
+        self.square = Square(og_square.obj)
         self.square.bind(obj=self.update_bg_img)
-        # This needs to exist since the square changed before the binding.
         self.update_bg_img(None, self.square.obj)
 
     def update_bg_img(self, instance, obj):
@@ -223,6 +230,7 @@ class ResumeGameBtn(Button, ModelUpdater):
         self.text = (f"Resume Game with {self.game_for_btn.opponent}.\n" 
                      f"(Status: {self.game_for_btn.status.value})\n"
                      )
+        self.background_normal = get_img("mountains_watercolor1.png")
 
     def update_model(self):
         """Populate the "global" `self.game`"""
@@ -297,7 +305,7 @@ class GotoCreateAccountBtn(Button, ModelUpdater):
         super(GotoCreateAccountBtn, self).__init__(**kwargs)
         self.text = "Create Account"
         self.color = (0, 0, 0, 1)
-        self.background_normal = get_img("mountains_watercolor1.png")
+        self.background_normal = get_img("combo_scene1.jpg")
 
     def on_press(self):
         switch_to_screen("create_account")
@@ -332,7 +340,10 @@ class CreateAccountBtn(Button, ModelUpdater):
         if not self.validate_login(username, password):
             return
         hashed = bcrypt.hashpw(bytes(password, encoding="utf8"), bcrypt.gensalt())
-        anvil.server.call("create_account", username, hashed.decode("utf-8"))
+        row_or_err = anvil.server.call("create_account", username, hashed.decode("utf-8"))
+        if isinstance(row_or_err, str):
+            ErrorPopup(row_or_err).open()
+            return
         logger.info(f"Created new account for {username}")
         self.update_model(username)
         switch_to_screen("user_home")

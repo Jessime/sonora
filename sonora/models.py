@@ -341,8 +341,12 @@ class Square(EventDispatcher):
 
     obj = ObjectProperty(allownone=True)
 
+    def __init__(self, obj=None, **kwargs):
+        super(Square, self).__init__(**kwargs)
+        self.obj = obj
+
     def __repr__(self):
-        return "Square[Empty]" if self.obj is None else str(self.obj)
+        return "Square[Empty]" if self.obj is None else f"Square[{self.obj}]"
 
 
 class Board:

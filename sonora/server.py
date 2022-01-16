@@ -22,8 +22,16 @@ def get_people():
 
 
 @anvil.server.callable
+def username_available(username):
+    return app_tables.users.get(username=username) is None
+
+
+@anvil.server.callable
 def create_account(username, hashed):
-    app_tables.users.add_row(username=username, password_hash=hashed, enabled=True)
+    if username_available(username):
+        return app_tables.users.add_row(username=username, password_hash=hashed, enabled=True)
+    else:
+        return f"This username ({username}) already exists.\nPlease choose a unique name."
 
 
 @anvil.server.callable

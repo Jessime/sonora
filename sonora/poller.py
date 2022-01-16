@@ -52,8 +52,8 @@ class DBPoll(EventDispatcher):
             self.handle_win()
             return
 
-        self.game.your_turn = fresh_turn["username"] == self.game.your_name
-        self.polled_opp_finish_turn = self.game.your_turn
+        self.polled_opp_finish_turn = fresh_turn["username"] == self.game.your_name
+        self.game.your_turn = self.polled_opp_finish_turn
 
     def scan_for_state_transitions_on_home_screen(self, arg1):
         """If sitting on the home screen, poll for state changes.

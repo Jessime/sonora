@@ -12,6 +12,7 @@ class SonoraColor(Enum):
     MOUSE_FUR = (0.8392, 0.8078, 0.7882, 1)
     DESERT_RAIN = (0.3216, 0.6392, 1.0, 1)
 
+
 class SetupStatusInternal(Enum):
     PLAYER1_DONE = "PLAYER1_DONE"
     PLAYER2_DONE = "PLAYER2_DONE"

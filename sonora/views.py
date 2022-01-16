@@ -401,8 +401,8 @@ class UserHomeScreen(SonoraScreen, ModelViewer):
         Additionally, it makes sense to tie it to UserHomeScreen since, if you are playing a game,
         and then go back to the home screen, that game is still 'active' in the Game model.
         """
-        logger.info("It's your turn")
         if polled_opp_finish_turn:
+            logger.info("It's your turn")
             NotificationPopup(f"{self.game.opponent} has taken their turn.").open()
 
 

@@ -585,7 +585,7 @@ class Game(EventDispatcher):
         else:
             raise ValueError(f"{fresh_setup_status} is not a valid setup status.")
 
-    def resolve_turn_updates(self, arg1, arg2):
+    def resolve_turn_updates(self, arg1, polled_opp_finish_turn):
         """Called when your opp finishes a turn.
 
         Note: it already been verified that they haven't won.
@@ -597,6 +597,8 @@ class Game(EventDispatcher):
         1. A hit
         2. A miss
         """
+        if not polled_opp_finish_turn:
+            return
         new_board = Board.deserialize(self.db_rep[self.your_board_col_label])
         for obj in new_board.contents[::-1]:  # Most likely case is a miss
             if hasattr(obj, "segments"):

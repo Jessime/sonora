@@ -88,6 +88,11 @@ class YourBoardBtn(Button, ModelUpdater):
         self.square = None
         self.shot_bg = get_img("x_mark.png")
         self.game.bind(setup_status=self.populate_board_view)
+        self.game.bind(your_turn=self.refresh_view)
+
+    def refresh_view(self, instance, your_turn):
+        if your_turn:
+            self.update_bg_img(None, self.square.obj)
 
     def populate_board_view(self, instance, setup_status):
         """We can arrive here from two different routes:
@@ -96,13 +101,14 @@ class YourBoardBtn(Button, ModelUpdater):
         2. Having just finished setting up a game
 
         If the latter is true, we need to properly transfer the game_setup board to the game_board.
-        That means clearing the bindings to the setup board.
+        That means clearing the bindings from the setup board.
         """
         if setup_status != SetupStatus.COMPLETE:
             return
         og_square = self.game.board.grid[(self.row, self.col)]
         self.square = Square(og_square.obj)
         self.square.bind(obj=self.update_bg_img)
+        self.game.board.grid[(self.row, self.col)] = self.square
         self.update_bg_img(None, self.square.obj)
 
     def update_bg_img(self, instance, obj):

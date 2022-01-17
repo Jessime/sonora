@@ -1,7 +1,8 @@
 import anvil.server
 from kivy.app import App
 
-from sonora.models import AnimalTypes, Game, GameSetup, User
+from sonora.models import Game, GameSetup, User
+from sonora.animals import AnimalTypes
 from sonora.static import UPLINK_CLIENT_KEY
 from sonora.views import get_screen_manager
 from sonora.poller import DBPoll

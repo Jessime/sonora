@@ -7,7 +7,9 @@ from loguru import logger
 from more_itertools import only
 
 from sonora.buttons_dir.updater import ModelUpdater, switch_to_screen
-from sonora.models import Game, Segment, SetupStatus, Photo, Square
+from sonora.models import Game, SetupStatus
+from sonora.board_objects import Photo, Square
+from sonora.animals import Segment
 from sonora.popups import ErrorPopup, FinishSetupConfirmation, NextSetupPageConfirmation, TakeTurnConfirmation, ExitSetupConfirmation
 from sonora.static import COLS, SonoraColor
 from sonora.data import get_img
@@ -91,6 +93,8 @@ class YourBoardBtn(Button, ModelUpdater):
         self.game.bind(your_turn=self.refresh_view)
 
     def refresh_view(self, instance, your_turn):
+        if self.game.setup_status != SetupStatus.COMPLETE:
+            return
         if your_turn:
             self.update_bg_img(None, self.square.obj)
 

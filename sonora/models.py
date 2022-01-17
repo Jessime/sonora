@@ -7,9 +7,8 @@ from kivy.properties import BooleanProperty, ListProperty, NumericProperty, Obje
 from loguru import logger
 from more_itertools import only
 
-from sonora.board_objects import Animal, AnimalTypes
-
-from sonora.board_objects import Photo, Miss, Square
+from sonora import board_objects
+from sonora.board_objects import Animal, AnimalTypes, Photo, Miss, Square
 from sonora.static import COLS, SetupStatus, SetupStatusInternal, Status
 
 
@@ -65,7 +64,8 @@ class Board:
         new = cls()
 
         def find_cls(board_obj):
-            return globals()[board_obj["class"]]
+            return getattr(board_objects, board_obj["class"])
+
         contents = [find_cls(board_obj).deserialize(board_obj) for board_obj in pkl]
         setattr(new, "contents", contents)
 

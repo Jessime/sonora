@@ -8,8 +8,7 @@ from more_itertools import only
 
 from sonora.buttons_dir.updater import ModelUpdater, switch_to_screen
 from sonora.models import Game, SetupStatus
-from sonora.board_objects import Photo, Square
-from sonora.animals import Segment
+from sonora.board_objects import Photo, Square, Segment
 from sonora.popups import ErrorPopup, FinishSetupConfirmation, NextSetupPageConfirmation, TakeTurnConfirmation, ExitSetupConfirmation
 from sonora.static import COLS, SonoraColor
 from sonora.data import get_img

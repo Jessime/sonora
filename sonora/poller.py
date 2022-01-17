@@ -2,8 +2,8 @@
 import anvil
 from kivy.app import App
 from kivy.clock import Clock
-from kivy.properties import BooleanProperty, StringProperty
 from kivy.event import EventDispatcher
+from kivy.properties import BooleanProperty, StringProperty
 from loguru import logger
 
 
@@ -87,8 +87,8 @@ class DBPoll(EventDispatcher):
             return
 
         def get_usernames(row):
-            return frozenset((row["player1"]["username"], row["player2"]["username"])
-                             )
+            return frozenset((row["player1"]["username"], row["player2"]["username"]))
+
         current_games = {get_usernames(row) for row in self.user.game_rows}
         db_games = anvil.server.call("get_incomplete_games", self.user.username)
         new_games = [g for g in db_games if get_usernames(g) not in current_games]

@@ -2,7 +2,6 @@ from enum import Enum
 
 from kivy.event import EventDispatcher
 from kivy.properties import ObjectProperty
-
 from more_itertools import only
 
 from sonora.data import get_img
@@ -47,6 +46,7 @@ class BaseBoardObject:
 
 class Photo(BaseBoardObject):
     """A transient attempt to take a photo of opponent's animal."""
+
     img = get_img("camera.png")
 
 
@@ -102,7 +102,7 @@ class Segment(BaseBoardObject):
                 chars.append(c)
             else:
                 break
-        animal_cls = globals()[''.join(chars)]
+        animal_cls = globals()["".join(chars)]
         animal = only((a for a in board.contents if isinstance(a, animal_cls)))
         return animal
 

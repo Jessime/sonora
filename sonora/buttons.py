@@ -6,18 +6,23 @@ from kivy.uix.image import Image
 from loguru import logger
 from more_itertools import only
 
+from sonora.board_objects import Photo, Segment, Square
 from sonora.buttons_dir.updater import ModelUpdater, switch_to_screen
-from sonora.models import Game, SetupStatus
-from sonora.board_objects import Photo, Square, Segment
-from sonora.popups import ErrorPopup, FinishSetupConfirmation, NextSetupPageConfirmation, TakeTurnConfirmation, ExitSetupConfirmation
-from sonora.static import COLS, SonoraColor
 from sonora.data import get_img
+from sonora.models import Game, SetupStatus
+from sonora.popups import (
+    ErrorPopup,
+    ExitSetupConfirmation,
+    FinishSetupConfirmation,
+    NextSetupPageConfirmation,
+    TakeTurnConfirmation,
+)
+from sonora.static import COLS, SonoraColor
 
 
 class OppBoardBtn(Button, ModelUpdater):
-    """
+    """ """
 
-    """
     def __init__(self, row, col, **kwargs):
         super(OppBoardBtn, self).__init__(**kwargs)
         self.row = row
@@ -80,6 +85,7 @@ class OppBoardBtn(Button, ModelUpdater):
 
 class YourBoardBtn(Button, ModelUpdater):
     """Note: Unless we start adding powers to the animals, this button doesn't do anything."""
+
     def __init__(self, row, col, **kwargs):
         super(YourBoardBtn, self).__init__(**kwargs)
         self.row = row
@@ -236,9 +242,7 @@ class ResumeGameBtn(Button, ModelUpdater):
     def __init__(self, game_row, **kwargs):
         super(ResumeGameBtn, self).__init__(**kwargs)
         self.game_for_btn = Game(game_row, self.user)  # Don't populate `self.game` quite yet
-        self.text = (f"Resume Game with {self.game_for_btn.opponent}.\n" 
-                     f"(Status: {self.game_for_btn.status.value})\n"
-                     )
+        self.text = f"Resume Game with {self.game_for_btn.opponent}.\n" f"(Status: {self.game_for_btn.status.value})\n"
         self.background_normal = get_img("mountains_watercolor1.png")
 
     def update_model(self):
@@ -473,8 +477,7 @@ class ExitSetupBtn(Button):
         self.background_color = SonoraColor.SEDONA_SUNSET.value
 
     def on_press(self):
-        msg = ("Are you sure you want to exit?\n"
-               "Doing so will lose all setup information.")
+        msg = "Are you sure you want to exit?\n" "Doing so will lose all setup information."
         ExitSetupConfirmation(msg).open()
 
 

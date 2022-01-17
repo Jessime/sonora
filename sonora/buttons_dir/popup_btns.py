@@ -2,7 +2,7 @@ from kivy.uix.button import Button
 from loguru import logger
 
 from sonora.buttons_dir.updater import ModelUpdater, switch_to_screen
-from sonora.static import SetupStatus, Status, SonoraColor
+from sonora.static import SetupStatus, SonoraColor, Status
 
 
 class ConfirmBtn(Button, ModelUpdater):

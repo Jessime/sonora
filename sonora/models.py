@@ -8,7 +8,7 @@ from loguru import logger
 from more_itertools import only
 
 from sonora import board_objects
-from sonora.board_objects import Animal, AnimalTypes, Photo, Miss, Square
+from sonora.board_objects import Animal, AnimalTypes, Miss, Photo, Square
 from sonora.static import COLS, SetupStatus, SetupStatusInternal, Status
 
 
@@ -156,7 +156,7 @@ class GameSetup(EventDispatcher):
         (AnimalTypes.SNAKE, AnimalTypes.CENTIPEDE),
         (AnimalTypes.JACKRABBIT, AnimalTypes.GILA),
         (AnimalTypes.JAVELINA, AnimalTypes.RINGTAIL),
-        (AnimalTypes.BIGHORN, AnimalTypes.BOBCAT)
+        (AnimalTypes.BIGHORN, AnimalTypes.BOBCAT),
     )  # TODO add other tuples
     board: Board = Board()
 
@@ -212,8 +212,12 @@ class Game(EventDispatcher):
             return SetupStatus.NEITHER
         if self.db_rep["setup_status"] == SetupStatus.COMPLETE.value:
             return SetupStatus.COMPLETE
-        just_you_done = (self.db_rep["setup_status"] == SetupStatusInternal.PLAYER1_DONE.value and self.you_are_p1 or
-                         self.db_rep["setup_status"] == SetupStatusInternal.PLAYER2_DONE.value and not self.you_are_p1)
+        just_you_done = (
+            self.db_rep["setup_status"] == SetupStatusInternal.PLAYER1_DONE.value
+            and self.you_are_p1
+            or self.db_rep["setup_status"] == SetupStatusInternal.PLAYER2_DONE.value
+            and not self.you_are_p1
+        )
         if just_you_done:
             return SetupStatus.YOU_DONE_OPP_NOT
         return SetupStatus.OPP_DONE_YOU_NOT

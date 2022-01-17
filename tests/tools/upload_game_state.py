@@ -6,15 +6,14 @@ Takes two args:
 1. The name of the player to upload to
 2. The path to the file that contains the json representation of the board.
 """
-import sys
-import pickle
 import json
+import pickle
+import sys
 from gzip import compress
 
 import anvil.server
 from anvil import BlobMedia
 from more_itertools import only
-
 
 name_to_load_to, board_path = sys.argv[1:]
 

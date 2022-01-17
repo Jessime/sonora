@@ -1,13 +1,12 @@
 from kivy.app import App
+from kivy.core.window import Window
 from kivy.graphics import Color, Rectangle
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.textinput import TextInput
-from kivy.core.window import Window
-from kivy.uix.image import Image
-
 from loguru import logger
 
 from sonora.buttons import (
@@ -17,6 +16,7 @@ from sonora.buttons import (
     CreateAccountBtn,
     CreateGameBtn,
     DoSomethingBtn,
+    ExitSetupBtn,
     GotoCreateAccountBtn,
     GotoCreateGameBtn,
     GotoLoginScreenBtn,
@@ -25,16 +25,15 @@ from sonora.buttons import (
     GotoYourBoardBtn,
     LoginBtn,
     OppBoardBtn,
-    ExitSetupBtn,
     ResumeGameBtn,
-    TakeTurnBtn,
     SetupBoardBtn,
+    TakeTurnBtn,
     YourBoardBtn,
 )
-from sonora.data import get_img
 from sonora.buttons_dir.updater import switch_to_screen
+from sonora.data import get_img
 from sonora.popups import NotificationPopup
-from sonora.static import COLS, SonoraColor, Status, Key
+from sonora.static import COLS, Key, SonoraColor, Status
 
 
 def set_background_color(label, color):
@@ -107,8 +106,7 @@ class GameStateHeader(Label, ModelViewer):
         if your_turn is None:
             return
         turn = "YOUR" if your_turn else "THEIR"
-        msg = (f"Welcome to your game with {self.game.opponent}.\n"
-               f"It is {turn} turn.")
+        msg = f"Welcome to your game with {self.game.opponent}.\n" f"It is {turn} turn."
         self.text = msg
 
 
@@ -385,14 +383,14 @@ class UserHomeScreen(SonoraScreen, ModelViewer):
         if not self.is_current_screen:
             switch_to_screen("user_home")
         if winner == self.user.username:
-            msg = ("CONGRATULATIONS!\n"
-                   "You've photographed all the animals, \n"
-                   f"and beaten {self.game.opponent}. \n"
-                   "Good job!\n")
+            msg = (
+                "CONGRATULATIONS!\n"
+                "You've photographed all the animals, \n"
+                f"and beaten {self.game.opponent}. \n"
+                "Good job!\n"
+            )
         else:
-            msg = ("Oh no!\n"
-                   f"You've lost your game to {winner}.\n"
-                   "Better luck next time.")
+            msg = "Oh no!\n" f"You've lost your game to {winner}.\n" "Better luck next time."
         NotificationPopup(msg).open()
 
     def announce_your_turn(self, arg1, polled_opp_finish_turn):

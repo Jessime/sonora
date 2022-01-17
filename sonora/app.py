@@ -1,11 +1,11 @@
 import anvil.server
 from kivy.app import App
 
-from sonora.models import Game, GameSetup, User
 from sonora.board_objects import AnimalTypes
+from sonora.models import Game, GameSetup, User
+from sonora.poller import DBPoll
 from sonora.static import UPLINK_CLIENT_KEY
 from sonora.views import get_screen_manager
-from sonora.poller import DBPoll
 
 
 class SonoraApp(App):

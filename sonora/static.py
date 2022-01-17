@@ -33,4 +33,3 @@ class Status(Enum):
 
 class Key(Enum):
     ENTER = 40
-

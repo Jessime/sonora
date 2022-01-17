@@ -2,7 +2,13 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
 from kivy.uix.popup import Popup
 
-from sonora.buttons_dir.popup_btns import CancelBtn, FinishSetupConfirmBtn, NextSetupPageConfirmBtn, TakeTurnConfirmBtn, ExitSetupConfirmBtn
+from sonora.buttons_dir.popup_btns import (
+    CancelBtn,
+    ExitSetupConfirmBtn,
+    FinishSetupConfirmBtn,
+    NextSetupPageConfirmBtn,
+    TakeTurnConfirmBtn,
+)
 
 
 class NotificationPopup(Popup):
